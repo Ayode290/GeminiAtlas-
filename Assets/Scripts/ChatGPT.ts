@@ -68,7 +68,10 @@ export class ChatGPT extends BaseScriptComponent {
           ]
         }
       ],
-      max_tokens: 110
+      max_tokens: 110,
+      // Higher sampling diversity so it reaches for less predictable facts.
+      temperature: 1.0,
+      top_p: 0.95
     })
       .then((response) => {
         if (response.choices && response.choices.length > 0) {
@@ -121,15 +124,21 @@ export class ChatGPT extends BaseScriptComponent {
       interestLine,
       pickLine,
       avoidLine,
-      `Then write a single piece of unexpected, true, little-known trivia that connects the subject to the chosen interest.`,
       ``,
-      `Rules:`,
-      `- Be specific and factually accurate. Do not invent facts; if unsure, choose a fact you are confident about.`,
-      `- The trivia is around 30 words; never exceed 40 words. One or two sentences.`,
+      `Silently brainstorm 4 candidate facts connecting the subject to the chosen interest, ranging from obvious to obscure. Discard any that a typical adult already knows or could easily guess. Output ONLY the single most surprising, specific, verifiable one.`,
+      ``,
+      `Quality bar — the fact MUST:`,
+      `- Be genuinely surprising or counterintuitive, the kind that makes even someone familiar with the topic say "I had no idea." Aim for the top 1% most obscure true facts, not a fun-fact you'd find on the first page of a web search.`,
+      `- Be anchored by a concrete specific: a name, date, place, or number.`,
+      `- NOT be common knowledge, a textbook definition, an etymology everyone knows, or a vague generality.`,
+      ``,
+      `Other rules:`,
+      `- Be factually accurate. Do not invent or exaggerate; if unsure of a striking fact, pick a less flashy one you are confident is true.`,
+      `- Around 30 words; never exceed 40. One or two sentences.`,
       `- After the trivia, add a final line with 3-4 hashtags, space-separated, no other text:`,
       `  the chosen interest first, then the recognized subject, then 1-2 other relevant tags.`,
       `  Use CamelCase with no spaces inside a hashtag (e.g. #ArtHistory).`,
-      `- Output ONLY the trivia text then the hashtag line. No title, no preamble, no quotation marks, no emoji, no markdown.`,
+      `- Output ONLY the trivia text then the hashtag line. No title, no preamble, no quotation marks, no emoji, no markdown, no "Did you know".`,
       ``,
       `Format template (structure only — do NOT copy its topic or content):`,
       `<one or two sentences of trivia>`,
