@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/3f37b656-92d8-48b4-994d-0cc4c7ab9fc8>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> d26e4964-92b0-4b9e-9642-72514d8ef8e4
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> d26e4964-92b0-4b9e-9642-72514d8ef8e4
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 09b24cdc-6bf7-41df-b66b-aee8e5cc313f
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/09b24cdc-6bf7-41df-b66b-aee8e5cc313f>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 180edaad-74a7-4e64-acac-07846b10631c
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    enableLogging: false
+    enableLoggingLifecycle: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">InterestStore – holds selected topics for the session</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Registered on global.cropInterestStore and read by ChatGPT when building the factoid prompt.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

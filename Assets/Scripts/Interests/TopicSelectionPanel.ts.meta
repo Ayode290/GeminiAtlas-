@@ -1,0 +1,91 @@
+- !<AssetImportMetadata/be9dd8aa-da80-47a2-a4b3-8927fe09e065>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> b957875c-e609-4e60-bdef-cb68840d1608
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> b957875c-e609-4e60-bdef-cb68840d1608
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> f86e8e2e-e2b6-4de5-ab59-3287a20acfec
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/f86e8e2e-e2b6-4de5-ab59-3287a20acfec>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 788067e9-9056-4907-ae2b-53e9756e378d
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    buttonDepthOffset: false
+    cameraObj: false
+    distanceFromCamera: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    frame: false
+    horizontalGap: false
+    interestStore: false
+    labelSize: false
+    ovalAspect: false
+    panelOffset: false
+    startLabel: false
+    topics: false
+    verticalGap: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - frame: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      cameraObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      interestStore: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      topics: !<string[]>
+        []
+      ovalAspect: 1.600000
+      horizontalGap: 1.500000
+      verticalGap: !<float> 1.000000
+      buttonDepthOffset: !<float> 1.000000
+      labelSize: !<float> 28.000000
+      startLabel: Start exploring
+      distanceFromCamera: !<float> 60.000000
+      panelOffset: !<Vec3> {x: 0.000000, y: 0.000000, z: 0.000000}
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">TopicSelectionPanel – launch-time interest picker</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Builds a honeycomb of toggleable CapsuleButtons under a Frame and commits the selection to the InterestStore on Start.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input AssignableType frame {"hint":"Frame component the buttons are spawned under (falls back to a Frame on this object)"}'
+    - '// @input SceneObject cameraObj {"hint":"Camera used to position the panel in front of the user at launch (optional)"}'
+    - '// @input AssignableType_1 interestStore {"hint":"InterestStore to commit selections to (falls back to global.cropInterestStore)"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Layout</span>"}'
+    - '// @input string[] topics = {} {"hint":"Topics to show. Leave empty to use the editable DEFAULT_TOPICS list."}'
+    - '// @input float ovalAspect = 1.6 {"hint":"Width/height ratio of the oval cluster. >1 is wider than tall. Drives how many rows are used."}'
+    - '// @input float horizontalGap = 1.5 {"hint":"Horizontal gap between buttons (cm)"}'
+    - '// @input float verticalGap = 1 {"hint":"Vertical gap between honeycomb rows (cm)"}'
+    - '// @input float buttonDepthOffset = 1 {"hint":"How far the buttons sit in front of the frame plane to avoid clipping (cm)"}'
+    - '// @input float labelSize = 28 {"hint":"Font size for the button labels"}'
+    - '// @input string startLabel = "Start exploring" {"hint":"Label of the confirm button"}'
+    - '// @input float distanceFromCamera = 60 {"hint":"Distance in cm to place the panel in front of the camera at launch"}'
+    - '// @input vec3 panelOffset {"hint":"Offset (cm) of the buttons relative to the background frame: x=right, y=up, z=depth"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'
