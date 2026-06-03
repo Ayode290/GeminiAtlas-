@@ -1,0 +1,72 @@
+- !<AssetImportMetadata/44afa7e3-95a1-42d7-b49f-4c6308c192b7>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> bce6a0db-a3d6-428f-926a-ccf9a6531843
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> bce6a0db-a3d6-428f-926a-ccf9a6531843
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> cfa923da-e765-4577-8dc2-a772e2b71e4d
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/cfa923da-e765-4577-8dc2-a772e2b71e4d>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: a9ea78e6-fea5-4acb-a1c7-4cc58bde2865
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    checkIntervalSec: false
+    defaultFloorOffset: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    groundPlane: false
+    headObject: false
+    keepGroundWithMesh: false
+    worldMeshVisual: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - worldMeshVisual: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
+      groundPlane: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      headObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      defaultFloorOffset: !<float> -120.000000
+      keepGroundWithMesh: false
+      checkIntervalSec: !<float> 1.000000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">WorldMeshFallback – chooses World Mesh vs ground-plane surface</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Enables the World Mesh visual when reconstruction has faces; otherwise shows a ground quad placed at the detected (or default) floor height.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Component.RenderMeshVisual worldMeshVisual {"hint":"World Mesh RenderMeshVisual (driven by WorldRenderObjectProvider)"}'
+    - '// @input SceneObject groundPlane {"hint":"Ground-plane quad used as the fallback ping surface"}'
+    - '// @input SceneObject headObject {"hint":"Scene object used as the head/camera reference for floor detection"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Tuning</span>"}'
+    - '// @input float defaultFloorOffset = -120 {"hint":"Fallback floor offset below the head (cm, negative = below). Used when no floor hit is found."}'
+    - '// @input bool keepGroundWithMesh {"hint":"Keep the ground plane enabled even when the World Mesh is available (covers mesh holes)"}'
+    - '// @input float checkIntervalSec = 1 {"hint":"How often (seconds) to re-evaluate World Mesh availability and floor height"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

@@ -14,6 +14,10 @@
     - !<own> 738ad89a-82c4-4718-85b1-3b99e9f41195
     - !<own> f2e20589-8081-4fdc-828c-a22c4fa507ac
     - !<own> 5cb6ee5b-4854-423b-bf0e-7f3486d29f7a
+    - !<own> 580901eb-5721-44e1-9e89-9249bba7c292
+    - !<own> 5a002bfe-7ee4-4985-879c-df240824f398
+    - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
+    - !<own> c5be34f2-fd58-4bb9-b900-b610829dbfb4
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       []
@@ -3121,6 +3125,21 @@
     - !<own> ccd078d0-fd49-4b9b-ae2b-e33423356581
   Components:
     - !<own> b3cfa175-54e8-4696-9acf-681e6dd05030
+- !<SceneObject/580901eb-5721-44e1-9e89-9249bba7c292>
+  PrefabRemaps:
+    []
+  Name: World Mesh
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> f57efa55-ee0a-46d2-9cca-f46a9ef0deef
 - !<SceneObject/580bff36-7415-4ef4-88f1-fd965d95a3b2>
   PrefabRemaps:
     []
@@ -3302,6 +3321,21 @@
     ring-3_end_end_end: !<reference> 81dff09b-2333-4e30-9bb1-7772d9f5bd1f
     thumb-3_end_end_end_end: !<reference> a890df31-eb50-48e1-bfa9-14ba0d1dbe9e
     pinky-3_end_end: !<reference> 017d3718-a161-48c8-bf21-86bf49f41918
+- !<SceneObject/5a002bfe-7ee4-4985-879c-df240824f398>
+  PrefabRemaps:
+    []
+  Name: GroundPing
+  Enabled: false
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 10000.000000, y: 10000.000000, z: 10000.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 925aabf8-4148-4021-a636-53857bf010cb
 - !<SceneObject/5cb6ee5b-4854-423b-bf0e-7f3486d29f7a>
   PrefabRemaps:
     []
@@ -3443,6 +3477,8 @@
     "":
       notificationText: !<reference.Text> ba3928e4-2cc8-4e2b-80af-d269989cb1b9
       notificationMessage: Prayer detected
+      pingController: !<MappingBased.AssignableType> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
+      headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       palmDistanceCm: !<float> 8.000000
       fingersUpPitchDeg: !<float> 30.000000
       palmsFacingDot: 0.500000
@@ -4654,6 +4690,26 @@
     CapitalizationOverride: None
   DepthTest: false
   TwoSided: false
+- !<RenderMeshVisual/925aabf8-4148-4021-a636-53857bf010cb>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 5c85f052-88ea-4296-9a87-ec2e981abfd8
+  Mesh: !<reference> 690a9a1f-57bb-4873-bee8-52e89aa45199
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
 - !<SceneObject/92cb4c5a-96b1-4d62-8c82-5e1046c38b9a>
   PrefabRemaps:
     []
@@ -5204,6 +5260,44 @@
     - !<own> b29b4476-9e6e-4c36-9e49-e79a76d9a9c2
   Components:
     []
+- !<ScriptComponent/a038f5d3-c2e8-4d9a-ba30-0adfffbf5742>
+  PrefabRemaps:
+    []
+  Name: PingController
+  Enabled: true
+  ScriptAsset: !<reference> 59d15e09-55c9-4f47-911c-ae290cca5b4e
+  ScriptInputsDefault:
+    pingSpeed: true
+    maxRadius: true
+    bandThickness: true
+    burstCount: true
+    burstIntervalSec: true
+    pingColor: true
+    debugStaticRing: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      pingMaterial: !<reference.Material> 5c85f052-88ea-4296-9a87-ec2e981abfd8
+      targetVisuals: !<reference.RenderMeshVisual[]>
+        - !<reference> f57efa55-ee0a-46d2-9cca-f46a9ef0deef
+        - !<reference> 925aabf8-4148-4021-a636-53857bf010cb
+      headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      pingSpeed: !<float> 250.000000
+      maxRadius: !<float> 450.000000
+      bandThickness: !<float> 25.000000
+      burstCount: !<float> 3.000000
+      burstIntervalSec: 0.150000
+      pingColor: !<Vec4> {x: 0.300000, y: 0.800000, z: 1.000000, w: 1.000000}
+      debugStaticRing: false
+      debugRadius: !<float> 300.000000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/a0c98da5-c336-47e0-9082-74ddfe243c80>
   PrefabRemaps:
     []
@@ -6867,6 +6961,21 @@
     []
   Components:
     - !<own> 00e576b0-dfb9-4c28-973c-bd339294b855
+- !<SceneObject/c5be34f2-fd58-4bb9-b900-b610829dbfb4>
+  PrefabRemaps:
+    []
+  Name: WorldMeshFallback
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> e2c2d8f1-a6eb-4708-acdb-6a72768edad9
 - !<SceneObject/c76bc3ec-a5bf-4a97-9332-9094a778fd0d>
   PrefabRemaps:
     []
@@ -7219,6 +7328,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/cfa122d8-0a42-44f7-9c9d-f10923115ab9>
+  PrefabRemaps:
+    []
+  Name: PingController
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
 - !<SceneObject/cfbceba9-6842-43ed-a1d7-563b1d0418eb>
   PrefabRemaps:
     []
@@ -7879,6 +8003,32 @@
     - !<own> ffa580d3-78da-43f4-b7a5-e2f0b7e8c1b3
   Components:
     []
+- !<ScriptComponent/e2c2d8f1-a6eb-4708-acdb-6a72768edad9>
+  PrefabRemaps:
+    []
+  Name: WorldMeshFallback
+  Enabled: true
+  ScriptAsset: !<reference> bce6a0db-a3d6-428f-926a-ccf9a6531843
+  ScriptInputsDefault:
+    defaultFloorOffset: true
+    checkIntervalSec: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      worldMeshVisual: !<reference.RenderMeshVisual> f57efa55-ee0a-46d2-9cca-f46a9ef0deef
+      groundPlane: !<reference.SceneObject> 5a002bfe-7ee4-4985-879c-df240824f398
+      headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      defaultFloorOffset: !<float> -120.000000
+      keepGroundWithMesh: true
+      checkIntervalSec: !<float> 1.000000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/e4cf6e08-80af-4b1f-a408-fa8c50db7761>
   PrefabRemaps:
     []
@@ -8576,6 +8726,26 @@
     - !<reference> c71dde88-df6c-46a6-8426-d07b956a747e
   Mesh: !<reference> b65568f8-3141-4fc6-b034-96009f5bfd8f
   Skin: !<reference> 821ab469-89a7-415c-88f2-56f17ab69e9f
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}
+- !<RenderMeshVisual/f57efa55-ee0a-46d2-9cca-f46a9ef0deef>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 5c85f052-88ea-4296-9a87-ec2e981abfd8
+  Mesh: !<reference> 301cdce6-ef00-4082-a41e-8358e4e97d73
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
   BlendShapesEnabled: true
   BlendNormals: false
   BlendShapes:

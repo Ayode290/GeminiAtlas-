@@ -11,6 +11,7 @@ import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 import animate, { CancelSet } from "SpectaclesInteractionKit.lspkg/Utils/animate"
 import { SIK } from "SpectaclesInteractionKit.lspkg/SIK"
 import TrackedHand from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/TrackedHand"
+import { PingController } from "./PingController"
 
 // Snapshot of every metric evaluated for the prayer pose on a given frame.
 type PoseStatus = {
@@ -40,6 +41,16 @@ export class PrayerGestureBehavior extends BaseScriptComponent {
   @input
   @hint("Message displayed in the notification text")
   notificationMessage: string = "Prayer detected"
+
+  @input
+  @hint("Ping controller fired when the prayer pose is detected (optional)")
+  @allowUndefined
+  pingController: PingController
+
+  @input
+  @hint("Scene object used as the ping origin (player head / camera)")
+  @allowUndefined
+  headObject: SceneObject
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Detection thresholds</span>')
@@ -232,11 +243,22 @@ export class PrayerGestureBehavior extends BaseScriptComponent {
   // Replace/augment with an animation trigger in the future.
   private onPrayerDetected = (): void => {
     this.logger.info("Prayer gesture detected")
+    this.emitPing()
     // In debug mode the status readout already reflects detection; don't
     // overwrite it with the auto-hiding notification.
     if (!this.debugMode) {
       this.showNotification()
     }
+  }
+
+  // Fires the radiating ping scan from the player's head position. Safe to call
+  // even when the controller or head reference is unassigned.
+  private emitPing(): void {
+    if (!this.pingController || !this.headObject) {
+      return
+    }
+    const headPos = this.headObject.getTransform().getWorldPosition()
+    this.pingController.emitBurst(headPos)
   }
 
   private showNotification(): void {

@@ -1,0 +1,90 @@
+- !<AssetImportMetadata/26c179e4-45e1-4bff-ad50-e13c582fa91c>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 59d15e09-55c9-4f47-911c-ae290cca5b4e
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 59d15e09-55c9-4f47-911c-ae290cca5b4e
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 422eec5a-a9dc-40ba-a4c4-f4c238b507e3
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/422eec5a-a9dc-40ba-a4c4-f4c238b507e3>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: ede4166d-9def-4c3a-9841-b544a9f9cf30
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    bandThickness: false
+    burstCount: false
+    burstIntervalSec: false
+    debugRadius: false
+    debugStaticRing: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    headObject: false
+    maxRadius: false
+    pingColor: false
+    pingMaterial: false
+    pingSpeed: false
+    targetVisuals: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - pingMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      targetVisuals: !<reference.RenderMeshVisual[]>
+        []
+      headObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pingSpeed: !<float> 250.000000
+      maxRadius: !<float> 450.000000
+      bandThickness: !<float> 25.000000
+      burstCount: !<float> 3.000000
+      burstIntervalSec: 0.150000
+      pingColor: !<Vec4> {x: 0.300000, y: 0.800000, z: 1.000000, w: 1.000000}
+      debugStaticRing: false
+      debugRadius: !<float> 150.000000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">PingController – drives the expanding world-scan ping shells</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Clones the ping material onto the target visuals and animates per-ping radius/alpha uniforms each frame. Call emitBurst(origin) to fire a series of shells.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Asset.Material pingMaterial {"hint":"Ping scan graph material. Cloned at runtime and assigned to every target visual so the asset itself is never mutated."}'
+    - '// @input Component.RenderMeshVisual[] targetVisuals {"hint":"Render visuals that should display the ping effect (e.g. the World Mesh visual and the ground-plane fallback quad)."}'
+    - '// @input SceneObject headObject {"hint":"Scene object whose world position is the default ping origin (player head / camera). Used by the editor tap test."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Tuning</span>"}'
+    - '// @input float pingSpeed = 250 {"hint":"Expansion speed of each shell, in cm per second"}'
+    - '// @input float maxRadius = 450 {"hint":"Radius (cm) at which a ping has fully faded out and is recycled"}'
+    - '// @input float bandThickness = 25 {"hint":"Thickness of the glowing band (cm)"}'
+    - '// @input float burstCount = 3 {"hint":"Number of shells emitted per emitBurst() call"}'
+    - '// @input float burstIntervalSec = 0.15 {"hint":"Seconds between successive shells within a burst"}'
+    - '// @input vec4 pingColor = {0.3,0.8,1,1} {"hint":"Color of the ping band (RGB), alpha scales overall intensity"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Debug</span>"}'
+    - '// @input bool debugStaticRing {"hint":"Force one always-on ring at debugRadius (ignores triggers/timer) to verify the shader + material wiring"}'
+    - '// @input float debugRadius = 150 {"hint":"Radius (cm) of the forced debug ring"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

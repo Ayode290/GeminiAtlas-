@@ -31,12 +31,14 @@
     enableLogging: false
     enableLoggingLifecycle: false
     fingersUpPitchDeg: false
+    headObject: false
     holdFrames: false
     notificationDurationSec: false
     notificationMessage: false
     notificationText: false
     palmDistanceCm: false
     palmsFacingDot: false
+    pingController: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -48,6 +50,8 @@
   DefaultScriptInputs:
     - notificationText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       notificationMessage: Prayer detected
+      pingController: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      headObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       palmDistanceCm: !<float> 8.000000
       fingersUpPitchDeg: !<float> 30.000000
       palmsFacingDot: -0.400000
@@ -66,6 +70,8 @@
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
     - '// @input Component.Text notificationText {"hint":"Text component shown briefly when the prayer pose is detected"}'
     - '// @input string notificationMessage = "Prayer detected" {"hint":"Message displayed in the notification text"}'
+    - '// @input AssignableType pingController {"hint":"Ping controller fired when the prayer pose is detected (optional)"}'
+    - '// @input SceneObject headObject {"hint":"Scene object used as the ping origin (player head / camera)"}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Detection thresholds</span>"}'
     - "// @input float palmDistanceCm = 8 {\"hint\":\"Max distance (cm) between the two palm centers to count as 'together'\"}"
