@@ -18,7 +18,6 @@
     - !<own> 5a002bfe-7ee4-4985-879c-df240824f398
     - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
     - !<own> c5be34f2-fd58-4bb9-b900-b610829dbfb4
-    - !<own> 400cc602-3dbd-4ebe-84a0-ced5815da4e1
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       []
@@ -1354,7 +1353,7 @@
   MeshShadowMode: None
   ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
   ShadowDensity: 1.000000
-  Text: Text
+  Text: ""
   Editable: false
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
@@ -2375,21 +2374,6 @@
     []
   Components:
     - !<own> 02ca03b3-224b-4053-b92c-9e45c4b3e5f0
-- !<SceneObject/400cc602-3dbd-4ebe-84a0-ced5815da4e1>
-  PrefabRemaps:
-    []
-  Name: World Mesh 1
-  Enabled: false
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> 8e360d06-9c32-49a8-8721-79d2e1248a2c
 - !<SceneObject/4342d268-8875-49df-b368-d5992caf434c>
   PrefabRemaps:
     []
@@ -3567,6 +3551,7 @@
     holdFrames: true
     cooldownSec: true
     notificationDurationSec: true
+    debugMode: true
     enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -3583,7 +3568,7 @@
       holdFrames: !<float> 3.000000
       cooldownSec: !<float> 2.000000
       notificationDurationSec: 2.500000
-      debugMode: true
+      debugMode: false
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -4654,26 +4639,6 @@
     - !<own> ddad3bd8-4f7a-4a7c-a437-d91ae747af18
   Components:
     []
-- !<RenderMeshVisual/8e360d06-9c32-49a8-8721-79d2e1248a2c>
-  PrefabRemaps:
-    []
-  Name: Render Mesh Visual
-  Enabled: true
-  RenderOrder: 0
-  StretchMode: Stretch
-  VerticalAlignment: Center
-  HorizontalAlignment: Center
-  MeshShadowMode: None
-  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
-  ShadowDensity: 1.000000
-  Materials:
-    - !<reference> 7025785f-6492-46e9-b3e1-1a07b199104b
-  Mesh: !<reference> 1e560bf1-a78b-4234-b92b-13c04c5c72ad
-  Skin: !<reference> 00000000-0000-0000-0000-000000000000
-  BlendShapesEnabled: true
-  BlendNormals: false
-  BlendShapes:
-    {}
 - !<SceneObject/8eb8e346-260a-48a2-bdbc-4b8bab5fc921>
   PrefabRemaps:
     []
@@ -6596,7 +6561,7 @@
   MeshShadowMode: None
   ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
   ShadowDensity: 1.000000
-  Text: Text
+  Text: ""
   Editable: false
   ShowEditingPreview: true
   TouchHandler: !<reference> 00000000-0000-0000-0000-000000000000
@@ -6669,7 +6634,7 @@
   PrefabRemaps:
     []
   Name: Ping Debug
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 10.000000, z: -80.000000}
@@ -8145,7 +8110,9 @@
   ScriptInputsDefault:
     defaultFloorOffset: true
     keepGroundWithMesh: true
+    assumeMeshOnDevice: true
     checkIntervalSec: true
+    debugMode: true
     enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -8157,9 +8124,10 @@
       headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       defaultFloorOffset: !<float> -120.000000
       keepGroundWithMesh: false
+      assumeMeshOnDevice: true
       checkIntervalSec: !<float> 1.000000
       debugText: !<reference.Text> 1ff9d132-0e28-48fa-96e0-2b64936a8b9b
-      debugMode: true
+      debugMode: false
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -9173,8 +9141,8 @@
 - !<SceneObject/fe3b3472-40be-4885-a734-fe2438f2514d>
   PrefabRemaps:
     []
-  Name: Prayer Notification
-  Enabled: true
+  Name: Prayer Debug
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: -80.000000}
