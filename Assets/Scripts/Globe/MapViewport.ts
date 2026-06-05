@@ -65,7 +65,7 @@ export class MapViewport extends BaseScriptComponent {
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Transitions</span>')
   @input
-  @hint("Seconds for the show/hide table fade and the per-LOD texture dissolve.")
+  @hint("Seconds for the show/hide table fade and the per-LOD crossfade.")
   fadeSec: number = 0.45
 
   @ui.separator
@@ -81,24 +81,33 @@ export class MapViewport extends BaseScriptComponent {
   private logger: Logger
   private material: Material = null
   private currentLevel: LodLevel | null = null
+  private currentTex: Texture | null = null
   // Live UV transform applied as mapUV = windowUV * scale + offset.
   private uv: UvTransform = { offset: { x: 0, y: 0 }, scale: { x: 1, y: 1 } }
   private currentAlpha: number = 0
 
-  // A small alpha tween used for show/hide and the LOD dissolve. The dissolve
-  // fades out, swaps the texture at the midpoint, then fades back in.
+  // True dual-sampler crossfade on a SINGLE quad: the material samples two map
+  // textures (A = incoming/resting level, B = outgoing level) and lerps between
+  // them by `crossfade`. A LOD step loads the new level into slot A, the old one
+  // into slot B, sets crossfade = 1 (fully old), and tweens it to 0 (fully new).
+  // At rest crossfade = 0, so only slot A matters. No black dip, no flash, no
+  // overdraw — the feathered crop alpha and baseColor opacity are shared.
+  private crossfade: number = 0
+
+  // A plain alpha tween for the quad's show/hide (table appear/disappear).
   private alphaTween: {
     from: number
     to: number
     duration: number
     elapsed: number
-    // Dissolve: alpha dips from `from` to 0 over the first half, swaps the
-    // texture, then rises 0 -> `to` over the second half (reads as a crossfade
-    // without a dual-sampler shader).
-    dissolve: boolean
-    pendingTex: Texture | null
-    swapped: boolean
     onDone: (() => void) | null
+  } | null = null
+
+  // A separate tween that drives `crossfade` from 1 -> 0 during a LOD step.
+  private transitionTween: {
+    from: number
+    duration: number
+    elapsed: number
   } | null = null
 
   onAwake() {
@@ -121,7 +130,8 @@ export class MapViewport extends BaseScriptComponent {
    * CONTINUOUS: stepping IN lands near the new level's home (max) framing, while
    * stepping OUT lands near its min (zoomed-in) framing — never re-triggering the
    * edge that caused the step. The resulting scale is clamped to the level's
-   * [minUvScale, maxUvScale] band. `dissolve` does a fade-out/swap/fade-in.
+   * [minUvScale, maxUvScale] band. When `dissolve` is set, the incoming level is
+   * crossfaded in over the outgoing one (overlay fade) instead of swapping hard.
    */
   setLevel(level: LodLevel, keepView?: GeoBounds, dissolve: boolean = false): void {
     if (!level || !level.mapTex) {
@@ -129,6 +139,11 @@ export class MapViewport extends BaseScriptComponent {
       return
     }
     const prevLevel = this.currentLevel
+    // Snapshot what is on screen RIGHT NOW (texture + framing) before we retarget
+    // the main quad — this is what the crossfade overlay will show and fade out.
+    const prevTex = this.currentTex
+    const prevUv = this.uv
+
     this.currentLevel = level
 
     if (keepView) {
@@ -144,23 +159,35 @@ export class MapViewport extends BaseScriptComponent {
     } else {
       this.uv = { offset: { x: 0, y: 0 }, scale: { x: 1, y: 1 } }
     }
-    this.applyUv()
 
-    if (dissolve && prevLevel) {
-      // Fade out, swap texture at the midpoint, fade back in.
-      this.alphaTween = {
-        from: this.currentAlpha,
-        to: 1,
-        duration: this.fadeSec,
-        elapsed: 0,
-        dissolve: true,
-        pendingTex: level.mapTex,
-        swapped: false,
-        onDone: null,
-      }
-    } else {
+    if (dissolve && prevLevel && prevTex) {
+      // Crossfade: slot B = the outgoing level at its outgoing framing, slot A =
+      // the incoming level at its new framing, crossfade 1 (old) -> 0 (new).
+      this.applyTextureB(prevTex)
+      this.applyUvB(prevUv)
+      this.applyUv()
       this.applyTexture(level.mapTex)
+      this.beginCrossfade()
+    } else {
+      // No transition: slot A is the only one shown (crossfade pinned to 0).
+      this.applyUv()
+      this.applyTexture(level.mapTex)
+      this.endCrossfade()
     }
+  }
+
+  private beginCrossfade(): void {
+    this.setCrossfade(1)
+    this.transitionTween = {
+      from: 1,
+      duration: Math.max(0.0001, this.fadeSec),
+      elapsed: 0,
+    }
+  }
+
+  private endCrossfade(): void {
+    this.transitionTween = null
+    this.setCrossfade(0)
   }
 
   /**
@@ -216,6 +243,7 @@ export class MapViewport extends BaseScriptComponent {
 
   /** Fades the table out over `fadeSec`, then disables the object. */
   hide(onDone?: () => void): void {
+    this.endCrossfade()
     this.startAlphaTween(this.currentAlpha, 0, this.fadeSec, () => {
       this.getSceneObject().enabled = false
       if (onDone) onDone()
@@ -239,6 +267,7 @@ export class MapViewport extends BaseScriptComponent {
     }
     this.material = src.clone()
     this.tableVisual.mainMaterial = this.material
+    this.setCrossfade(0)
   }
 
   // Creates a RenderMeshVisual on this object with a centered, +Y-facing quad
@@ -275,7 +304,9 @@ export class MapViewport extends BaseScriptComponent {
     return rmv
   }
 
+  // Slot A: the incoming/resting level (what's shown when crossfade = 0).
   private applyTexture(tex: Texture): void {
+    this.currentTex = tex
     if (!this.material || !tex) return
     const pass = this.material.mainPass as any
     pass.mapTex = tex
@@ -286,6 +317,28 @@ export class MapViewport extends BaseScriptComponent {
     const pass = this.material.mainPass as any
     pass.uvOffset = new vec2(this.uv.offset.x, this.uv.offset.y)
     pass.uvScale = new vec2(this.uv.scale.x, this.uv.scale.y)
+  }
+
+  // Slot B: the outgoing level shown only mid-crossfade (when crossfade > 0).
+  private applyTextureB(tex: Texture): void {
+    if (!this.material || !tex) return
+    const pass = this.material.mainPass as any
+    pass.mapTexB = tex
+  }
+
+  private applyUvB(uv: UvTransform): void {
+    if (!this.material) return
+    const pass = this.material.mainPass as any
+    pass.uvOffsetB = new vec2(uv.offset.x, uv.offset.y)
+    pass.uvScaleB = new vec2(uv.scale.x, uv.scale.y)
+  }
+
+  // 0 = show slot A (current level) only, 1 = show slot B (outgoing) only.
+  private setCrossfade(t: number): void {
+    this.crossfade = clamp01(t)
+    if (!this.material) return
+    const pass = this.material.mainPass as any
+    pass.crossfade = this.crossfade
   }
 
   private setAlpha(a: number): void {
@@ -304,9 +357,6 @@ export class MapViewport extends BaseScriptComponent {
       to,
       duration: Math.max(0.0001, duration),
       elapsed: 0,
-      dissolve: false,
-      pendingTex: null,
-      swapped: false,
       onDone,
     }
     if (duration <= 0) {
@@ -317,28 +367,30 @@ export class MapViewport extends BaseScriptComponent {
   }
 
   private update(dt: number): void {
+    this.updateCrossfade(dt)
+    this.updateAlphaTween(dt)
+  }
+
+  // Drives the dual-sampler blend from the outgoing level (crossfade = 1) to the
+  // incoming level (crossfade = 0), so the new LOD resolves in place over the old.
+  private updateCrossfade(dt: number): void {
+    const t = this.transitionTween
+    if (!t) return
+    t.elapsed += dt
+    const k = easeInOutCubic(clamp01(t.elapsed / t.duration))
+    this.setCrossfade(lerp(t.from, 0, k))
+    if (t.elapsed >= t.duration) {
+      this.endCrossfade()
+    }
+  }
+
+  private updateAlphaTween(dt: number): void {
     const t = this.alphaTween
     if (!t) return
     t.elapsed += dt
     const raw = clamp01(t.elapsed / t.duration)
-
-    if (t.dissolve) {
-      // First half: fade `from` -> 0. Second half: swap, then 0 -> `to`.
-      if (raw < 0.5) {
-        const k = easeInOutCubic(raw / 0.5)
-        this.setAlpha(lerp(t.from, 0, k))
-      } else {
-        if (!t.swapped && t.pendingTex) {
-          this.applyTexture(t.pendingTex)
-          t.swapped = true
-        }
-        const k = easeInOutCubic((raw - 0.5) / 0.5)
-        this.setAlpha(lerp(0, t.to, k))
-      }
-    } else {
-      const k = easeInOutCubic(raw)
-      this.setAlpha(lerp(t.from, t.to, k))
-    }
+    const k = easeInOutCubic(raw)
+    this.setAlpha(lerp(t.from, t.to, k))
 
     if (t.elapsed >= t.duration) {
       this.setAlpha(t.to)
