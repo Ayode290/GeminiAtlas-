@@ -1,0 +1,57 @@
+- !<AssetImportMetadata/4b559824-028c-4051-9a7d-b513cf0df71c>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> f09a2fee-858c-42b6-a0db-96ae5b1c4ce2
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> f09a2fee-858c-42b6-a0db-96ae5b1c4ce2
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> ceb16c43-882d-4a4e-8b21-7aae8569c83e
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/ceb16c43-882d-4a4e-8b21-7aae8569c83e>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: eb5abd6a-1392-427d-8e19-c6253a72158d
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    cityName: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    highlightScale: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cityName: Tokyo
+      highlightScale: 1.400000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">CityMarker – tappable pin marking a city on the globe</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Name must match a city in cityBounds.ts (Tokyo / Seattle / Los Angeles). Highlight is driven by the controller on gaze.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @input string cityName = "Tokyo" {"hint":"City name; must match a city in cityBounds.ts exactly (e.g. \"Tokyo\", \"Seattle\", \"Los Angeles\")."}'
+    - '// @input float highlightScale = 1.4 {"hint":"Scale multiplier applied when this marker is highlighted (gazed at)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

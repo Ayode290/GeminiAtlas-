@@ -1,0 +1,74 @@
+- !<AssetImportMetadata/a0ad434b-9958-43b6-84ba-aa18e212d793>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 0667f1e8-3b40-42c8-9fc0-582579342a17
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 0667f1e8-3b40-42c8-9fc0-582579342a17
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 702701e7-bfce-476c-a5a2-b3df09aada29
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/702701e7-bfce-476c-a5a2-b3df09aada29>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 516151cc-a8c3-4fc3-bd23-fe77291a70b9
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    enableLogging: false
+    enableLoggingLifecycle: false
+    fadeSec: false
+    maxUvScale: false
+    minUvScale: false
+    tableMaterial: false
+    tableSizeCm: false
+    tableVisual: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - tableVisual: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
+      tableMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      tableSizeCm: !<float> 60.000000
+      minUvScale: 0.340000
+      maxUvScale: !<float> 1.000000
+      fadeSec: 0.450000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">MapViewport – holodeck map table (UV pan/zoom under a fixed feathered crop)</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Single fixed mesh. Material must expose mapTex / uvOffset (vec2) / uvScale (vec2). The feathered crop mask is constant in the graph.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Component.RenderMeshVisual tableVisual {"hint":"OPTIONAL pre-made RenderMeshVisual of the table pane. Leave empty to BUILD a quad by code on this object. If set, its material is cloned."}'
+    - '// @input Asset.Material tableMaterial {"hint":"Table material (the graph exposing mapTex / uvOffset / uvScale + a fixed crop mask). Required when the table is built by code; cloned at runtime."}'
+    - '// @input float tableSizeCm = 60 {"hint":"Edge length (cm) of the code-built table quad. Ignored if a tableVisual is assigned. Match GlobeView.tableSizeCm."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Zoom limits (uvScale within a level)</span>"}'
+    - '// @input float minUvScale = 0.34 {"hint":"Smallest uvScale allowed while zoomed into a level (shows the least area / most detail). Below this the controller should step to the next LOD."}'
+    - "// @input float maxUvScale = 1 {\"hint\":\"Largest uvScale (1 = the whole LOD texture fills the pane = the level's home framing). Above this the controller should step out a LOD.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Transitions</span>"}'
+    - '// @input float fadeSec = 0.45 {"hint":"Seconds for the show/hide table fade and the per-LOD texture dissolve."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

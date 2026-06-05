@@ -1,0 +1,56 @@
+- !<AssetImportMetadata/069a16cf-ab4c-4fa1-9e54-c25780881c25>
+  ImportedAssetIds:
+    ObjectPrefab: !<reference> 5944fc67-e5d2-469e-9886-2a3a91e1c40b
+  ImporterName: ObjectPrefabImporter
+  PrimaryAsset: !<reference> 5944fc67-e5d2-469e-9886-2a3a91e1c40b
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    ObjectPrefab: !<own> 95e6ede1-b6c0-4634-a99c-6c0210dc1719
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<ObjectPrefabAssetData/95e6ede1-b6c0-4634-a99c-6c0210dc1719>
+  Prototype: !<ObjectOwner/a374b23a-b4a2-4099-b6ac-90afbc100f7b>
+    PackagePath: ""
+    objects:
+      - !<own> 973772e6-7774-4912-758e-4b078f57e513
+- !<SceneObject/973772e6-7774-4912-758e-4b078f57e513>
+  PrefabRemaps:
+    []
+  Name: MapMarker
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 180.000000}
+    Scale: {x: 3.000000, y: 3.000000, z: 3.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 9f00cdbb-fa84-41c9-53c9-c35bf1fbd62b
+- !<RenderMeshVisual/9f00cdbb-fa84-41c9-53c9-c35bf1fbd62b>
+  PrefabRemaps:
+    []
+  Name: Render Mesh Visual
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 268c2841-9394-4119-bce9-ac4c98189143
+  Mesh: !<reference> 0cd78c63-14cc-4d35-97c6-69d9340d4dcf
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}

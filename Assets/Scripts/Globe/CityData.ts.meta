@@ -1,0 +1,73 @@
+- !<AssetImportMetadata/662812e7-dced-47cb-9596-e269217325a4>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> e7d90a9a-2b35-4fd2-9601-e62d7179cf2c
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> e7d90a9a-2b35-4fd2-9601-e62d7179cf2c
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 70e6b0e8-316e-4dd9-8dca-417079310c1b
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/70e6b0e8-316e-4dd9-8dca-417079310c1b>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: c7300cd2-6a43-44e3-abac-5f82f40ffc61
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    enableLogging: false
+    enableLoggingLifecycle: false
+    globeBaseTexture: false
+    losAngelesLevels: false
+    seattleLevels: false
+    tokyoLevels: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - globeBaseTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
+      tokyoLevels: !<reference.Texture[]>
+        []
+      seattleLevels: !<reference.Texture[]>
+        []
+      losAngelesLevels: !<reference.Texture[]>
+        []
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">CityData – binds geo bounds to imported map textures</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Assign the generated PNGs (in L0..Ln order) for each city plus the globe base texture. Bounds come from cityBounds.ts.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Globe</span>"}'
+    - '// @input Asset.Texture globeBaseTexture {"hint":"Equirectangular base Earth texture for the globe sphere (hand-imported, not generated)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Tokyo LOD textures (L0, L1, L2 in order)</span>"}'
+    - '// @input Asset.Texture[] tokyoLevels {"hint":"Generated Tokyo map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Seattle LOD textures (L0, L1, L2 in order)</span>"}'
+    - '// @input Asset.Texture[] seattleLevels {"hint":"Generated Seattle map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Los Angeles LOD textures (L0, L1, L2 in order)</span>"}'
+    - '// @input Asset.Texture[] losAngelesLevels {"hint":"Generated Los Angeles map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

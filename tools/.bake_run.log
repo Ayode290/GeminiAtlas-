@@ -1,0 +1,21 @@
+Polite mode: 1.5-4.0s between uncached requests (~2.8s avg), cache=on at /Users/kaifengwu/SNAPCrop/tools/.tile_cache
+Cached tiles are reused with no network call, so re-runs are fast.
+City: Tokyo
+  bbox=(139.4253, 35.4512, 139.8753, 35.9012) zoom=12 tiles=[3634..3639]x[1609..1616] (48 tiles) -> Tokyo_L0.png
+    fetched 10/48 tiles
+    fetched 20/48 tiles
+    fetched 30/48 tiles
+    fetched 40/48 tiles
+    fetched 48/48 tiles
+  wrote /Users/kaifengwu/SNAPCrop/Assets/Textures/Globe/Tokyo_L0.png (1024x1024)
+  bbox=(139.5803, 35.6062, 139.7203, 35.7462) zoom=14 tiles=[14544..14550]x[6448..6455] (56 tiles) -> Tokyo_L1.png
+    fetched 10/56 tiles
+    fetched 20/56 tiles
+    fetched 30/56 tiles
+    fetched 40/56 tiles
+    fetched 50/56 tiles
+    fetched 56/56 tiles
+  wrote /Users/kaifengwu/SNAPCrop/Assets/Textures/Globe/Tokyo_L1.png (1024x1024)
+  bbox=(139.6278, 35.6537, 139.6728, 35.6987) zoom=15 tiles=[29093..29097]x[12901..12906] (30 tiles) -> Tokyo_L2.png
+    fetched 10/30 tiles
+    fetched 20/30 tiles
