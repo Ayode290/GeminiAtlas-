@@ -33,9 +33,9 @@ import { Interactor } from "SpectaclesInteractionKit.lspkg/Core/Interactor/Inter
 import { InteractorEvent, DragInteractorEvent } from "SpectaclesInteractionKit.lspkg/Core/Interactor/InteractorEvent";
 import { GlobeView, PoseEasing } from "./GlobeView";
 import { MapViewport } from "./MapViewport";
-import { CityData, City } from "./CityData";
+import { CityData, City, LodLevel } from "./CityData";
 import { CityMarker } from "./CityMarker";
-import { lonLatToSpherePos, LatLng, biasedEase } from "./GeoMath";
+import { lonLatToSpherePos, LatLng, biasedEase, clamp01 } from "./GeoMath";
 import { PinchDragTracker } from "./PinchDragTracker";
 
 interface Vec2 {
@@ -168,7 +168,7 @@ export class GlobeController extends BaseScriptComponent {
   gazeHalfAngleDeg: number = 12
 
   @input
-  @hint("On-screen table size in cm (matches GlobeView.tableSizeCm). Scales hand drags into UV pan.")
+  @hint("SINGLE authored on-screen table size in cm. Pushed to GlobeView (footprint match) and MapViewport (quad mesh) at startup, and used here for the table collider + pan scaling — set it in this one place.")
   tableSizeCm: number = 60
 
   @input
@@ -236,6 +236,18 @@ export class GlobeController extends BaseScriptComponent {
   // as the TOP TIP (the dive's pivot), matching GlobeView's pose semantics.
   private preDockTopPos: vec3 = vec3.zero()
   private preDockRot: quat = quat.quatIdentity()
+
+  // Active while a dive (ZOOMING_IN/OUT) drives the table by the globe's live
+  // footprint span so the two co-zoom seamlessly. `diveCenter` is the geographic
+  // point both keep centered: the city on the way in, the current view on the way
+  // out. Only set when the active city has a wide L-1 handoff capture; otherwise
+  // the dive falls back to a plain table fade.
+  private diveMapActive: boolean = false
+  private diveCenter: LatLng = { lat: 0, lng: 0 }
+  // Dive logging throttle + one-shot milestone flags (gated by enableLogging).
+  private diveLogT: number = 0
+  private diveLoggedMapOn: boolean = false
+  private diveLoggedHome: boolean = false
 
   // SIK interaction (Interactable + collider) drives the on-surface cursor and
   // jitter-filtered drag, replacing the raw thumbTip bookkeeping. The globe
@@ -305,10 +317,19 @@ export class GlobeController extends BaseScriptComponent {
       return
     }
     this.cities = this.cityData.getCities()
+    this.propagateTableSize()
     this.configureZoomLimits()
     this.ensureMarkers()
     this.setupInteractions()
     this.enterOverview()
+  }
+
+  // Pushes the single authored table size to the globe (footprint match) and the
+  // table (quad mesh) so all three components share one value — no per-component
+  // tableSizeCm to keep in sync.
+  private propagateTableSize(): void {
+    if (this.globeView) this.globeView.setTableSizeCm(this.tableSizeCm)
+    if (this.mapViewport) this.mapViewport.setTableSizeCm(this.tableSizeCm)
   }
 
   // Lowers the viewport's hard min uvScale below every per-level step-in
@@ -460,9 +481,13 @@ export class GlobeController extends BaseScriptComponent {
     this.state = "OVERVIEW"
     this.activeCity = null
     this.activeLevelIndex = 0
+    this.diveMapActive = false
     this.setMarkersVisible(true)
     if (this.globeView) this.globeView.show(this.crossfadeSec)
-    if (this.mapViewport) this.mapViewport.hide()
+    if (this.mapViewport) {
+      this.mapViewport.endTransition()
+      this.mapViewport.hide()
+    }
     this.setLabel("")
     this.logger.info("State -> OVERVIEW")
   }
@@ -490,15 +515,30 @@ export class GlobeController extends BaseScriptComponent {
     this.preDockTopPos = this.globeView.getTopTip()
     this.preDockRot = gT.getWorldRotation()
 
-    // Bring the table up at the (partly-zoomed) L0 framing the globe will match,
-    // fading it IN over the same window the globe dives + fades OUT — so the two
-    // crossfade in place rather than the table popping in somewhere unrelated.
-    const enterView = {
-      centerLatLng: { lat: l0.bounds.centerLatLng.lat, lng: l0.bounds.centerLatLng.lng },
-      spanDeg: enterSpan,
+    const fromScale = this.globeView.getScale()
+    const toScale = this.globeView.dockScaleForSpan(enterSpan)
+
+    if (this.hasTransition()) {
+      // Seamless handoff: the table co-zooms WITH the globe from the critical
+      // level inward. updateDiveMap() frames it every frame to the globe's live
+      // footprint span (starting on the wide L-1 capture, crossfading to sharp L0
+      // as it passes L0's home span) and crossfades its opacity against the globe.
+      this.diveMapActive = true
+      this.diveCenter = { lat: city.latLng.lat, lng: city.latLng.lng }
+      this.resetDiveLog()
+      this.mapViewport.beginTransition(city.transitionLevel, l0, l0.bounds.spanDeg, true)
+      this.logDiveStart("IN", fromScale, toScale, false)
+    } else {
+      // No L-1 capture for this city: fall back to bringing the table up at the
+      // (partly-zoomed) L0 framing and fading it in over the dive window.
+      this.diveMapActive = false
+      const enterView = {
+        centerLatLng: { lat: l0.bounds.centerLatLng.lat, lng: l0.bounds.centerLatLng.lng },
+        spanDeg: enterSpan,
+      }
+      this.mapViewport.setLevel(l0, enterView, false)
+      this.mapViewport.show(undefined, this.approachSec)
     }
-    this.mapViewport.setLevel(l0, enterView, false)
-    this.mapViewport.show(undefined, this.approachSec)
 
     // The globe simultaneously rotates the city to its top, slides that top onto
     // the table center, scales up until the surface patch matches the table
@@ -512,38 +552,126 @@ export class GlobeController extends BaseScriptComponent {
       pose.scale,
       targetAlpha,
       this.approachSec,
-      this.diveEasing(),
+      this.diveEasing(false, fromScale, toScale),
       () => this.dock()
     )
   }
 
-  // The per-channel easing for the dive, built from the inspector bias + speed
-  // knobs. Bias in [-1, 1] picks the curve shape via biasedEase (0 = natural
-  // ease-in-out, + = front-loaded, - = back-loaded); speed scales the channel's
-  // clock so it finishes in 1/speed of the dive (biasedEase clamps the overshoot,
-  // so the channel simply holds at its target once done).
-  private diveEasing(): PoseEasing {
+  // Whether the active city has a wide L-1 handoff capture (so the table can
+  // co-zoom continuously with the globe). Without it, the dive falls back to a
+  // plain table fade and the legacy full-range channel easing.
+  private hasTransition(): boolean {
+    return !!(this.activeCity && this.activeCity.transitionLevel)
+  }
+
+  // The globe scale whose surface footprint equals the L-1 transition span — the
+  // "critical level" where rotation + position have finished and the globe<->table
+  // crossfade begins. 0 when the city has no L-1 capture.
+  private criticalScale(): number {
+    const tl = this.activeCity ? this.activeCity.transitionLevel : null
+    if (!tl) return 0
+    return this.globeView.dockScaleForSpan(tl.bounds.spanDeg)
+  }
+
+  // The per-channel easing for the dive (or its reverse), built from the
+  // inspector bias + speed knobs around the CRITICAL LEVEL:
+  //   - SCALE runs the whole dive (one continuous curve) so the footprint zoom
+  //     never changes pace — that is what lets the table match by span alone.
+  //   - ROTATION + POSITION finish BY the critical level (a hard deadline). Speed
+  //     can only make them finish EARLIER (>=1); it can never push them past
+  //     critical, so after critical the globe<->table match depends on zoom only.
+  //   - FADE runs over [critical, L0-home]: the globe fades out / table fades in
+  //     and COMPLETES the moment L0 fills the table (100% zoom), so the rest of the
+  //     dive is a fully-opaque sharp-L0 zoom (100%->enter) rather than the L0 only
+  //     becoming visible at the very end.
+  // The reverse mirrors this with each direction's own critical time and reversed
+  // curve shapes: the globe fades back IN over [L0-home, critical] (the return
+  // starts opaque on L0 at home), then un-rotates outward.
+  private diveEasing(reversed: boolean, fromScale: number, toScale: number): PoseEasing {
+    const sclF = (t: number) => biasedEase(t * this.scaleSpeed, this.scaleBias)
+
+    if (!this.hasTransition()) {
+      // Legacy full-range dive: every channel spans the whole window.
+      const f = (spd: number, bias: number) => (t: number) => biasedEase(t * spd, bias)
+      const wrap = (g: (t: number) => number) => (reversed ? (t: number) => 1 - g(1 - t) : g)
+      return {
+        position: wrap(f(this.positionSpeed, this.positionBias)),
+        rotation: wrap(f(this.rotationSpeed, this.rotationBias)),
+        scale: wrap(f(this.scaleSpeed, this.scaleBias)),
+        alpha: wrap(f(this.fadeSpeed, this.fadeBias)),
+      }
+    }
+
+    const eps = 1e-4
+    const eff = (s: number) => Math.max(1, s) // rot/pos may finish earlier, never later
+
+    if (!reversed) {
+      const tc = clamp01(this.criticalTimeFraction(sclF, fromScale, toScale))
+      // The globe fades OUT / table fades IN over [critical, L0-home], COMPLETING
+      // the instant L0 fills the table (span = L0 home / 100% zoom). After that the
+      // globe is gone and the fully-opaque sharp L0 keeps zooming in to the enter
+      // framing — so L0 is clearly visible at 100% with a real 100%->70% zoom, not
+      // only revealed once the dive finishes.
+      const homeSpan = this.activeCity ? this.activeCity.levels[0].bounds.spanDeg : 1
+      const homeScale = this.globeView.dockScaleForSpan(homeSpan)
+      const tHome = Math.max(tc + eps, clamp01(this.scaleTimeFraction(sclF, fromScale, toScale, homeScale)))
+      const pre = (spd: number, bias: number) => (t: number) =>
+        biasedEase((t / Math.max(eps, tc)) * eff(spd), bias)
+      return {
+        scale: sclF,
+        position: pre(this.positionSpeed, this.positionBias),
+        rotation: pre(this.rotationSpeed, this.rotationBias),
+        alpha: (t: number) =>
+          t <= tc
+            ? 0
+            : t >= tHome
+            ? 1
+            : biasedEase(((t - tc) / Math.max(eps, tHome - tc)) * this.fadeSpeed, this.fadeBias),
+      }
+    }
+
+    // Reverse (table -> globe). Scale is the forward curve mirrored in time so the
+    // zoom-out paces like the zoom-in reversed; rotation/position depart AT the
+    // (reverse) critical level and ease outward; the globe fades back IN by it.
+    const sclRev = (t: number) => 1 - sclF(1 - t)
+    const tcr = clamp01(this.criticalTimeFraction(sclRev, fromScale, toScale))
+    const post = (spd: number, bias: number) => (t: number) =>
+      t <= tcr ? 0 : 1 - biasedEase((1 - (t - tcr) / Math.max(eps, 1 - tcr)) * eff(spd), bias)
     return {
-      position: (t: number) => biasedEase(t * this.positionSpeed, this.positionBias),
-      rotation: (t: number) => biasedEase(t * this.rotationSpeed, this.rotationBias),
-      scale: (t: number) => biasedEase(t * this.scaleSpeed, this.scaleBias),
-      alpha: (t: number) => biasedEase(t * this.fadeSpeed, this.fadeBias),
+      scale: sclRev,
+      position: post(this.positionSpeed, this.positionBias),
+      rotation: post(this.rotationSpeed, this.rotationBias),
+      alpha: (t: number) =>
+        t >= tcr ? 1 : 1 - biasedEase((1 - t / Math.max(eps, tcr)) * this.fadeSpeed, this.fadeBias),
     }
   }
 
-  // The dive easing played in REVERSE (a film run backwards): for each channel
-  // `f`, the return uses `1 - f(1 - t)`. Because the back() tween already goes
-  // dock -> overview (the reverse endpoints), this retraces the exact forward
-  // path with the same curves AND timing mirrored — so a channel that finished
-  // early on the way in now departs late (and holds at the dock pose until then)
-  // on the way out.
-  private reversedDiveEasing(): PoseEasing {
-    return {
-      position: (t: number) => 1 - biasedEase((1 - t) * this.positionSpeed, this.positionBias),
-      rotation: (t: number) => 1 - biasedEase((1 - t) * this.rotationSpeed, this.rotationBias),
-      scale: (t: number) => 1 - biasedEase((1 - t) * this.scaleSpeed, this.scaleBias),
-      alpha: (t: number) => 1 - biasedEase((1 - t) * this.fadeSpeed, this.fadeBias),
+  // The dive-time fraction at which a (monotonic 0->1) scale-progress function
+  // `scl` reaches the critical scale (globe footprint span == L-1 span).
+  private criticalTimeFraction(scl: (t: number) => number, fromScale: number, toScale: number): number {
+    return this.scaleTimeFraction(scl, fromScale, toScale, this.criticalScale())
+  }
+
+  // The dive-time fraction at which a (monotonic 0->1) scale-progress function
+  // `scl` reaches `targetScale`. Solved by bisection; clamped to [0, 1].
+  private scaleTimeFraction(
+    scl: (t: number) => number,
+    fromScale: number,
+    toScale: number,
+    targetScale: number
+  ): number {
+    const denom = toScale - fromScale
+    // Degenerate (no zoom): no meaningful crossing — collapse the window.
+    if (Math.abs(denom) < 1e-6) return toScale >= fromScale ? 0 : 1
+    const e = clamp01((targetScale - fromScale) / denom)
+    let lo = 0
+    let hi = 1
+    for (let i = 0; i < 28; i++) {
+      const mid = (lo + hi) / 2
+      if (scl(mid) < e) lo = mid
+      else hi = mid
     }
+    return (lo + hi) / 2
   }
 
   // The fraction of a level's home span that a freshly-entered level is framed at
@@ -560,6 +688,22 @@ export class GlobeController extends BaseScriptComponent {
     if (!this.activeCity) return
     const l0 = this.activeCity.levels[0]
     this.activeLevelIndex = 0
+
+    // Settle the table onto sharp, normally-docked L0 at the partly-zoomed enter
+    // framing. During the dive it was the co-zooming handoff (slot A=L-1/B=L0 by
+    // span); this hands it back to plain L0 pan/zoom at the SAME framing (so the
+    // swap is invisible) and pins it fully opaque.
+    if (this.diveMapActive) {
+      const enterView = {
+        centerLatLng: { lat: l0.bounds.centerLatLng.lat, lng: l0.bounds.centerLatLng.lng },
+        spanDeg: this.enterFraction() * l0.bounds.spanDeg,
+      }
+      this.mapViewport.endTransition()
+      this.mapViewport.setLevel(l0, enterView, false)
+      this.mapViewport.setOpacity(1)
+      this.diveMapActive = false
+    }
+
     if (this.fadeOutGlobe) this.globeView.getSceneObject().enabled = false
     this.state = "DOCKED"
     this.setLabel(l0.label)
@@ -665,14 +809,35 @@ export class GlobeController extends BaseScriptComponent {
     // Start faded out only if we're fading; otherwise the globe stayed visible.
     this.globeView.setAlpha(this.fadeOutGlobe ? 0 : 1)
 
-    this.mapViewport.hide(undefined, this.approachSec)
+    const fromScale = startPose.scale
+
+    if (this.hasTransition() && this.activeCity) {
+      // Reverse co-zoom: the table keeps tracking the globe's footprint span as it
+      // zooms back OUT (sharp L0 -> wide L-1 past home), crossfading its opacity
+      // out against the reappearing globe. updateDiveMap() drives it each frame;
+      // it is centered on the CURRENT view (where the user left the map).
+      this.diveMapActive = true
+      this.diveCenter = { lat: view.centerLatLng.lat, lng: view.centerLatLng.lng }
+      this.resetDiveLog()
+      const l0 = this.activeCity.levels[0]
+      this.mapViewport.beginTransition(this.activeCity.transitionLevel, l0, l0.bounds.spanDeg, false)
+      this.logDiveStart("OUT", fromScale, 1, true)
+      // Match the table to the globe's starting footprint immediately so frame 0
+      // shows the same sharp view the user had (no pop before the first update).
+      this.mapViewport.updateTransitionFraming(this.diveCenter, view.spanDeg)
+      this.mapViewport.setOpacity(1)
+    } else {
+      this.diveMapActive = false
+      this.mapViewport.hide(undefined, this.approachSec)
+    }
+
     this.globeView.animateToPose(
       this.preDockTopPos,
       this.preDockRot,
       1,
       1,
       this.approachSec,
-      this.reversedDiveEasing(),
+      this.diveEasing(true, fromScale, 1),
       () => this.enterOverview()
     )
   }
@@ -688,7 +853,127 @@ export class GlobeController extends BaseScriptComponent {
       }
     } else if (this.state === "DOCKED") {
       this.updateDockedInput()
+    } else if (this.state === "ZOOMING_IN" || this.state === "ZOOMING_OUT") {
+      this.updateDiveMap()
     }
+  }
+
+  // Per-frame globe<->table co-zoom while a dive is in flight: the table is framed
+  // to the globe's LIVE footprint span (so they zoom in lockstep) and its opacity
+  // is crossfaded against the globe (map = 1 - globe). The table only participates
+  // once the footprint is at/inside the L-1 span (i.e. at/after the critical level,
+  // by which point rotation + position have finished, so the globe's top patch is
+  // the centered city and the flat table matches it). Before that it stays hidden.
+  private updateDiveMap(): void {
+    if (!this.diveMapActive || !this.activeCity) return
+    const tl = this.activeCity.transitionLevel
+    if (!tl) return
+    const scale = this.globeView.getScale()
+    const span = this.globeView.spanForScale(scale)
+    const globeAlpha = this.globeView.getAlpha()
+    const participating = span <= tl.bounds.spanDeg
+    if (participating) {
+      this.mapViewport.updateTransitionFraming(this.diveCenter, span)
+      this.mapViewport.setOpacity(1 - globeAlpha)
+    } else {
+      this.mapViewport.setOpacity(0)
+    }
+    this.logDiveMap(span, scale, globeAlpha, participating, tl)
+  }
+
+  // Detailed dive telemetry: one-shot milestones (map first participates; span
+  // reaches L0 home, where sharp L0 should become visible) plus a throttled
+  // per-frame line. Gated by enableLogging.
+  private logDiveMap(span: number, scale: number, globeAlpha: number, participating: boolean, tl: LodLevel): void {
+    if (!this.enableLogging || !this.activeCity) return
+    const homeSpan = this.activeCity.levels[0].bounds.spanDeg
+    const mapOpacity = participating ? 1 - globeAlpha : 0
+    if (participating && !this.diveLoggedMapOn) {
+      this.diveLoggedMapOn = true
+      this.logger.info(
+        "DIVE map ON @span=" +
+          span.toFixed(3) +
+          " (transSpan=" +
+          tl.bounds.spanDeg.toFixed(3) +
+          ") globeAlpha=" +
+          globeAlpha.toFixed(2) +
+          " mapOpacity=" +
+          mapOpacity.toFixed(2)
+      )
+    }
+    if (span <= homeSpan && !this.diveLoggedHome) {
+      this.diveLoggedHome = true
+      this.logger.info(
+        "DIVE reached L0-home @span=" +
+          span.toFixed(3) +
+          " (home=" +
+          homeSpan.toFixed(3) +
+          ") globeAlpha=" +
+          globeAlpha.toFixed(2) +
+          " mapOpacity=" +
+          mapOpacity.toFixed(2) +
+          " -> sharp L0 should be visible now"
+      )
+    }
+    this.diveLogT += getDeltaTime()
+    if (this.diveLogT >= 0.15) {
+      this.diveLogT = 0
+      this.logger.info(
+        "DIVE f: span=" +
+          span.toFixed(3) +
+          " scale=" +
+          scale.toFixed(1) +
+          " globeAlpha=" +
+          globeAlpha.toFixed(2) +
+          " mapOpacity=" +
+          mapOpacity.toFixed(2)
+      )
+    }
+  }
+
+  // Resets dive logging throttle + one-shot milestone flags for a fresh dive.
+  private resetDiveLog(): void {
+    this.diveLogT = 0
+    this.diveLoggedMapOn = false
+    this.diveLoggedHome = false
+  }
+
+  // Logs the key scales/spans/time-fractions for a dive so the handoff timing can
+  // be verified against what is actually seen on screen.
+  private logDiveStart(label: string, fromScale: number, toScale: number, reversed: boolean): void {
+    if (!this.enableLogging || !this.activeCity) return
+    const homeSpan = this.activeCity.levels[0].bounds.spanDeg
+    const transSpan = this.activeCity.transitionLevel ? this.activeCity.transitionLevel.bounds.spanDeg : 0
+    const critScale = this.criticalScale()
+    const homeScale = this.globeView.dockScaleForSpan(homeSpan)
+    const sclF = (t: number) => biasedEase(t * this.scaleSpeed, this.scaleBias)
+    const scl = reversed ? (t: number) => 1 - sclF(1 - t) : sclF
+    const tc = clamp01(this.criticalTimeFraction(scl, fromScale, toScale))
+    const tHome = clamp01(this.scaleTimeFraction(scl, fromScale, toScale, homeScale))
+    this.logger.info(
+      "DIVE START " +
+        label +
+        ": fromScale=" +
+        fromScale.toFixed(1) +
+        " (span=" +
+        this.globeView.spanForScale(fromScale).toFixed(3) +
+        ") toScale=" +
+        toScale.toFixed(1) +
+        " (span=" +
+        this.globeView.spanForScale(toScale).toFixed(3) +
+        ") | critScale=" +
+        critScale.toFixed(1) +
+        " (span=" +
+        transSpan.toFixed(3) +
+        ") homeScale=" +
+        homeScale.toFixed(1) +
+        " (span=" +
+        homeSpan.toFixed(3) +
+        ") | tc=" +
+        tc.toFixed(3) +
+        " tHome=" +
+        tHome.toFixed(3)
+    )
   }
 
   // Highlights the marker the user is gazing at (front of camera, inside cone).

@@ -12,6 +12,12 @@
     "centerLatLng": { "lat": 0, "lng": 0 },
     "spanDeg": 360
   },
+  "transition": {
+    "_note": "SINGLE SOURCE OF TRUTH for the wide 'L-1' capture used ONLY to span-match the globe during the globe<->table handoff (it is NOT a navigable level; docking still lands at L0). For each city the tool captures a square covering spanMultiple x that city's L0 spanDeg, centered on L0, at outSize, and writes <city>_L-1.png. Change spanMultiple here (one place) to rescale every city's L-1.",
+    "spanMultiple": 10,
+    "outSize": 2048,
+    "labelSuffix": "region"
+  },
   "cities": [
     {
       "name": "Tokyo",

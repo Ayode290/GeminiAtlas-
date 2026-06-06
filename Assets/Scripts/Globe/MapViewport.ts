@@ -20,6 +20,7 @@
 import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 import {
   GeoBounds,
+  LatLng,
   UvTransform,
   Vec2Like,
   boundsToUv,
@@ -48,9 +49,11 @@ export class MapViewport extends BaseScriptComponent {
   @allowUndefined
   tableMaterial: Material
 
-  @input
-  @hint("Edge length (cm) of the code-built table quad. Ignored if a tableVisual is assigned. Match GlobeView.tableSizeCm.")
-  tableSizeCm: number = 60
+  // Edge length (cm) of the code-built table quad (ignored when a tableVisual is
+  // assigned). NOT an @input: GlobeController owns the single authored value and
+  // pushes it here via setTableSizeCm so the table size can never drift between
+  // the globe, the table mesh, and panning.
+  private tableSizeCm: number = 60
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Zoom limits (uvScale within a level)</span>')
@@ -80,6 +83,9 @@ export class MapViewport extends BaseScriptComponent {
 
   private logger: Logger
   private material: Material = null
+  // True when the table quad was built by code (no tableVisual assigned), so a
+  // later setTableSizeCm can rebuild it at the authored size.
+  private builtOwnQuad: boolean = false
   private currentLevel: LodLevel | null = null
   private currentTex: Texture | null = null
   // Live UV transform applied as mapUV = windowUV * scale + offset.
@@ -110,6 +116,22 @@ export class MapViewport extends BaseScriptComponent {
     elapsed: number
   } | null = null
 
+  // --- globe<->table dive handoff state --------------------------------------
+  // While the controller dives the globe in/out, the table is framed every frame
+  // by geographic span (so it co-zooms with the globe). The L-1 -> L0 swap drives
+  // the PRIMARY sampler (slot A) DIRECTLY by setting its texture at the switch
+  // span — it does NOT rely on the dual-sampler crossfade (slot B), which only
+  // renders transiently during LOD steps. Forward: ride wide L-1, then swap slot A
+  // to sharp L0 the instant L0 fits the table (span <= L0 home). Reverse: start on
+  // L0, swap to L-1 a little past home so the exit doesn't blur-pop immediately.
+  private transitionActive: boolean = false
+  private transitionWide: LodLevel | null = null // L-1 (shown while zoomed out past the switch span)
+  private transitionSharp: LodLevel | null = null // L0 (shown once it fills the table)
+  private transitionShowingSharp: boolean = false // which texture is currently on slot A
+  private transitionSwitchSpan: number = 0.45 // span at/below which slot A shows sharp L0
+  // Reverse keeps sharp L0 until a bit past home before swapping to wide L-1.
+  private readonly REVERSE_SWITCH_RATIO = 1.3
+
   onAwake() {
     this.logger = new Logger("MapViewport", this.enableLogging || this.enableLoggingLifecycle, true)
     if (this.enableLoggingLifecycle) this.logger.debug("LIFECYCLE: onAwake()")
@@ -122,6 +144,16 @@ export class MapViewport extends BaseScriptComponent {
   }
 
   // --- Public API ------------------------------------------------------------
+
+  /**
+   * Sets the shared table size (cm). Called by GlobeController at startup. If the
+   * quad was built by code (no tableVisual assigned), it is rebuilt at the new
+   * size; a pre-made tableVisual is left as-is.
+   */
+  setTableSizeCm(cm: number): void {
+    this.tableSizeCm = Math.max(1, cm)
+    if (this.builtOwnQuad) this.buildQuadVisual(this.tableSizeCm)
+  }
 
   /**
    * Sets the active LOD. By default frames the level's whole texture (home
@@ -264,6 +296,113 @@ export class MapViewport extends BaseScriptComponent {
     })
   }
 
+  // --- Globe<->table dive handoff --------------------------------------------
+
+  /**
+   * Primes the table for the continuous globe<->table dive. The controller frames
+   * the table each frame by geographic span (updateTransitionFraming) so it
+   * co-zooms with the globe, and drives opacity (setOpacity) to crossfade it
+   * against the globe.
+   *
+   * The L-1 -> L0 swap is done on the PRIMARY sampler (slot A) directly — NOT via
+   * the dual-sampler crossfade (slot B), which only renders transiently during LOD
+   * steps and does not hold a sustained second texture. Direction-aware:
+   *   - `forward` (globe -> table): start on wide L-1; swap slot A to sharp L0 the
+   *     instant L0 fits the table (span <= L0 home), then keep zooming on L0.
+   *   - reverse (table -> globe): start on sharp L0; swap to wide L-1 a little past
+   *     home (REVERSE_SWITCH_RATIO) so the exit doesn't blur-pop immediately.
+   * Enables the object at alpha 0 (the controller owns opacity).
+   */
+  beginTransition(transitionLevel: LodLevel, l0Level: LodLevel, l0HomeSpan: number, forward: boolean): void {
+    if (!transitionLevel || !transitionLevel.mapTex || !l0Level || !l0Level.mapTex) {
+      this.logger.warn("beginTransition missing transition (L-1) or L0 texture.")
+      return
+    }
+    this.transitionTween = null
+    this.alphaTween = null
+    this.transitionActive = true
+    this.transitionWide = transitionLevel
+    this.transitionSharp = l0Level
+    const home = Math.max(1e-4, l0HomeSpan)
+    this.transitionSwitchSpan = forward ? home : home * this.REVERSE_SWITCH_RATIO
+    this.getSceneObject().enabled = true
+    this.setCrossfade(0) // primary sampler only; slot B unused during the dive
+    this.setAlpha(0)
+    // Start texture: forward begins wide (L-1), reverse begins sharp (L0).
+    this.transitionShowingSharp = !forward
+    const startLevel = forward ? transitionLevel : l0Level
+    this.applyTexture(startLevel.mapTex)
+    this.logger.info(
+      "beginTransition " +
+        (forward ? "FORWARD" : "REVERSE") +
+        " wide=" +
+        transitionLevel.label +
+        " sharp=" +
+        l0Level.label +
+        " switchSpan=" +
+        this.transitionSwitchSpan.toFixed(3) +
+        " startTex=" +
+        startLevel.label
+    )
+  }
+
+  /**
+   * Frames the table to show `(center, spanDeg)` on the PRIMARY sampler, swapping
+   * its texture between wide L-1 and sharp L0 at the switch span so the footprint
+   * tracks the globe's surface patch exactly. No-op unless beginTransition primed
+   * it. Leaves the DOCKED pan/zoom state (`this.uv`) untouched.
+   */
+  updateTransitionFraming(center: LatLng, spanDeg: number): void {
+    if (!this.transitionActive || !this.transitionWide || !this.transitionSharp) return
+    const view: GeoBounds = { centerLatLng: { lat: center.lat, lng: center.lng }, spanDeg }
+    const useSharp = spanDeg <= this.transitionSwitchSpan
+    const level = useSharp ? this.transitionSharp : this.transitionWide
+    if (useSharp !== this.transitionShowingSharp) {
+      this.transitionShowingSharp = useSharp
+      this.applyTexture(level.mapTex)
+      this.logger.info(
+        "transition SWAP -> " +
+          level.label +
+          " @span=" +
+          spanDeg.toFixed(3) +
+          " (switch=" +
+          this.transitionSwitchSpan.toFixed(3) +
+          ") alpha=" +
+          this.currentAlpha.toFixed(2)
+      )
+    }
+    this.applyUvA(this.framing(level.bounds, view))
+    this.setCrossfade(0)
+  }
+
+  /** Sets the table opacity directly (the controller crossfades it vs the globe). */
+  setOpacity(a: number): void {
+    this.alphaTween = null
+    this.setAlpha(a)
+  }
+
+  /** Ends the dive handoff bookkeeping (the table is now a normally-docked LOD). */
+  endTransition(): void {
+    this.transitionActive = false
+    this.transitionWide = null
+    this.transitionSharp = null
+  }
+
+  // boundsToUv for a view, pan-clamped into the texture (scale left as-is).
+  private framing(texBounds: GeoBounds, view: GeoBounds): UvTransform {
+    const t = boundsToUv(texBounds, view)
+    return { offset: clampPan(t.offset, t.scale), scale: t.scale }
+  }
+
+  // Slot A uv from an explicit transform (handoff framing), without disturbing
+  // `this.uv` — the DOCKED pan/zoom state we restore to after the dive.
+  private applyUvA(uv: UvTransform): void {
+    if (!this.material) return
+    const pass = this.material.mainPass as any
+    pass.uvOffset = new vec2(uv.offset.x, uv.offset.y)
+    pass.uvScale = new vec2(uv.scale.x, uv.scale.y)
+  }
+
   // --- Internal --------------------------------------------------------------
 
   // Builds the table visual (a code-generated quad) when none is assigned, then
@@ -271,6 +410,7 @@ export class MapViewport extends BaseScriptComponent {
   private setupVisual(): void {
     if (!this.tableVisual) {
       this.tableVisual = this.buildQuadVisual(this.tableSizeCm)
+      this.builtOwnQuad = true
     }
 
     // Prefer the explicit tableMaterial; fall back to whatever the visual carries.

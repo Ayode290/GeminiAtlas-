@@ -90,6 +90,28 @@ def bbox_from_entry(entry):
     return (c["lng"] - half, c["lat"] - half, c["lng"] + half, c["lat"] + half)
 
 
+def transition_entry(city, tcfg):
+    """
+    The derived 'L-1' wide capture for a city, or None if no transition config.
+
+    Its span is spanMultiple x the city's L0 spanDeg (the SINGLE SOURCE OF TRUTH
+    for the factor lives in cityBounds.json's `transition` block), centered on L0,
+    captured at the configured outSize. Level is -1 so it never collides with the
+    navigable L0..Ln chain. Returns a level-shaped dict the capture code reuses.
+    """
+    if not tcfg or not city.get("levels"):
+        return None
+    l0 = city["levels"][0]
+    suffix = tcfg.get("labelSuffix", "region")
+    return {
+        "level": -1,
+        "centerLatLng": {"lat": l0["centerLatLng"]["lat"], "lng": l0["centerLatLng"]["lng"]},
+        "spanDeg": tcfg["spanMultiple"] * l0["spanDeg"],
+        "outSize": int(tcfg.get("outSize", 2048)),
+        "label": f'{city["name"]} {suffix}',
+    }
+
+
 def choose_zoom(bbox, out_size):
     """Smallest zoom whose stitched crop pixel width >= out_size (capped)."""
     min_lng, _, max_lng, _ = bbox
@@ -282,6 +304,8 @@ def regenerate_ts(data):
     lines.append("  name: string;")
     lines.append("  centerLatLng: LatLng;")
     lines.append("  levels: LodBoundsEntry[];")
+    lines.append("  /** Wide 'L-1' capture for the globe<->table handoff (not a navigable level). */")
+    lines.append("  transition?: LodBoundsEntry;")
     lines.append("}")
     lines.append("")
     globe = data["globe"]
@@ -299,6 +323,7 @@ def regenerate_ts(data):
     lines.append(f'  attribution: "{provider["attribution"]}",')
     lines.append("};")
     lines.append("")
+    tcfg = data.get("transition")
     lines.append("/** All cities and their LOD bounds, mirrored from cityBounds.json. */")
     lines.append("export const CITY_BOUNDS: CityBoundsEntry[] = [")
     for city in data["cities"]:
@@ -314,6 +339,14 @@ def regenerate_ts(data):
                 f'label: "{lv["label"]}", texturePath: "{tp}" }},'
             )
         lines.append("    ],")
+        tlv = transition_entry(city, tcfg)
+        if tlv:
+            tp = texture_path_for(city["name"], tlv["level"])
+            lines.append(
+                f'    transition: {{ level: {tlv["level"]}, centerLatLng: {latlng(tlv["centerLatLng"])}, '
+                f'spanDeg: {tlv["spanDeg"]}, outSize: {tlv["outSize"]}, '
+                f'label: "{tlv["label"]}", texturePath: "{tp}" }},'
+            )
         lines.append("  },")
     lines.append("];")
     lines.append("")
@@ -330,6 +363,8 @@ def main():
 
     parser = argparse.ArgumentParser(description="Generate baked map LOD textures from cityBounds.json")
     parser.add_argument("--only", help="Limit to a single city name (e.g. Tokyo)")
+    parser.add_argument("--transition-only", action="store_true",
+                        help="Capture ONLY the wide L-1 handoff texture(s), skipping L0..Ln")
     parser.add_argument("--dry-run", action="store_true", help="Print the tile plan without fetching")
     parser.add_argument("--no-regen-ts", action="store_true", help="Skip rewriting cityBounds.ts")
     parser.add_argument("--min-delay", type=float, default=MIN_DELAY_SEC,
@@ -375,8 +410,18 @@ def main():
               f"(~{avg:.1f}s avg), cache={'on' if USE_CACHE else 'off'} at {TILE_CACHE_DIR}")
         print("Cached tiles are reused with no network call, so re-runs are fast.")
 
+    tcfg = data.get("transition")
     for city in cities:
         print(f"City: {city['name']}")
+        # The wide L-1 handoff capture first (largest area), then the L0..Ln chain.
+        tlv = transition_entry(city, tcfg)
+        if tlv:
+            out_path = os.path.join(OUT_DIR, f"{city['name']}_L{tlv['level']}.png")
+            build_entry_texture(session, provider, tlv, out_path, args.dry_run)
+        elif args.transition_only:
+            print(f"  no transition config for {city['name']}; nothing to capture.")
+        if args.transition_only:
+            continue
         for lv in city["levels"]:
             out_path = os.path.join(OUT_DIR, f"{city['name']}_L{lv['level']}.png")
             build_entry_texture(session, provider, lv, out_path, args.dry_run)

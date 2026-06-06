@@ -392,7 +392,7 @@
     labelText: true
     rotationSpeed: true
     scaleSpeed: true
-    fadeSpeed: true
+    fadeOutGlobe: true
     gazeHalfAngleDeg: true
     tableSizeCm: true
     zoomSpeed: true
@@ -416,21 +416,21 @@
       markerPrefab: !<reference.ObjectPrefab> 5944fc67-e5d2-469e-9886-2a3a91e1c40b
       markerSurfaceOffset: 1.040000
       markerScale: 0.100000
-      textureLonOffsetDeg: 111.599998
+      textureLonOffsetDeg: 111.400002
       cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       tableObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       labelText: !<reference.Text> 00000000-0000-0000-0000-000000000000
-      approachSec: !<float> 5.000000
-      crossfadeSec: !<float> 5.000000
+      approachSec: !<float> 2.000000
+      crossfadeSec: !<float> 2.000000
       positionBias: !<float> 1.000000
       rotationBias: !<float> 1.000000
       scaleBias: !<float> -1.000000
-      fadeBias: -0.550000
+      fadeBias: !<float> 1.000000
       positionSpeed: !<float> 2.000000
       rotationSpeed: !<float> 2.000000
       scaleSpeed: !<float> 1.000000
-      fadeSpeed: !<float> 1.000000
-      fadeOutGlobe: false
+      fadeSpeed: 3.400000
+      fadeOutGlobe: true
       gazeHalfAngleDeg: !<float> 12.000000
       tableSizeCm: !<float> 60.000000
       panSpeed: 0.300000
@@ -717,7 +717,6 @@
   Enabled: true
   ScriptAsset: !<reference> ccc16781-a1ae-478f-be36-0d3c72b96b87
   ScriptInputsDefault:
-    tableSizeCm: true
     enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -726,7 +725,6 @@
     "":
       globeVisual: !<reference.RenderMeshVisual> a68f4e5a-b414-419b-96b0-721edc8679a1
       globeRadiusCm: !<float> 0.000000
-      tableSizeCm: !<float> 60.000000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -842,14 +840,17 @@
         - !<reference> 76c27348-6e27-4d5d-8e4c-ee2011df77b4
         - !<reference> 053599c1-400e-46d0-a089-88c19fcf242d
         - !<reference> 3e808062-779f-4b2a-84b8-1e3d86bdfbea
+      tokyoTransition: !<reference.Texture> 2dee91a8-f797-4a65-b9b7-bfd061d10820
       seattleLevels: !<reference.Texture[]>
         - !<reference> 35eac00d-b74e-4cdc-a94c-802b0539370d
         - !<reference> ee3fd0fc-54e6-411d-b3e5-3f559aafa241
         - !<reference> d671d5a8-cc8e-4424-b4e2-9ab41b5948d9
+      seattleTransition: !<reference.Texture> 35869de0-e316-49e4-95c8-254cad3b1027
       losAngelesLevels: !<reference.Texture[]>
         - !<reference> 8aa501d8-4fff-4477-8392-35b08ac9e3a9
         - !<reference> 118f37e3-4b95-49a9-9d89-9e1c5f9b8fcf
         - !<reference> 83657c68-523c-4588-9986-e46119329da8
+      losAngelesTransition: !<reference.Texture> f71ae821-428c-47b3-8246-814f3315778c
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -1087,7 +1088,7 @@
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: -84.690804}
+    Position: {x: 0.000000, y: -35.000000, z: -84.690804}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
     Scale: {x: 25.000000, y: 25.000000, z: 25.000000}
     HasSegmentScaleCompensation: false
@@ -1372,7 +1373,6 @@
   ScriptAsset: !<reference> 0667f1e8-3b40-42c8-9fc0-582579342a17
   ScriptInputsDefault:
     tableVisual: true
-    tableSizeCm: true
     minUvScale: true
     maxUvScale: true
     fadeSec: true
@@ -1384,7 +1384,6 @@
     "":
       tableVisual: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
       tableMaterial: !<reference.Material> aa2ede3b-5c15-4041-abac-9fa02bb03a82
-      tableSizeCm: !<float> 60.000000
       minUvScale: 0.340000
       maxUvScale: !<float> 1.000000
       fadeSec: 0.450000

@@ -16,5 +16,5 @@
   CompressionSettings: !<SingleCompressionSettings>
     CompressorName: Performance
     CompressionSettings: !<TextureCompressionMipmapSettings>
-      Level: Medium
+      Level: High
       Mipmap: false

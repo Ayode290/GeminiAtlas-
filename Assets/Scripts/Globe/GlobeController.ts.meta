@@ -144,7 +144,7 @@
     - '// @input float fadeSpeed = 1 {"hint":"FADE speed multiplier (1 = full dive duration, higher = fades sooner).", "widget":"slider", "min":0.25, "max":5, "step":0.05}'
     - '// @input bool fadeOutGlobe = true {"hint":"Fade the globe out as it docks (and back in on return). Turn OFF to keep the globe fully visible at the dock pose, so you can verify the selected location ends up on TOP with the correct orientation."}'
     - '// @input float gazeHalfAngleDeg = 12 {"hint":"Cosine-threshold half-angle (degrees) of the gaze cone for marker selection."}'
-    - '// @input float tableSizeCm = 60 {"hint":"On-screen table size in cm (matches GlobeView.tableSizeCm). Scales hand drags into UV pan."}'
+    - '// @input float tableSizeCm = 60 {"hint":"SINGLE authored on-screen table size in cm. Pushed to GlobeView (footprint match) and MapViewport (quad mesh) at startup, and used here for the table collider + pan scaling — set it in this one place."}'
     - '// @input float panSpeed = 0.3 {"hint":"Pan speed multiplier for one-hand drag -> uvOffset."}'
     - '// @input float zoomSpeed = 1 {"hint":"Two-hand pinch zoom sensitivity (>1 = faster). Applies to both hand and two-finger touch zoom."}'
     - '// @input float lodEnterZoom = 0.7 {"hint":"uvScale a newly-entered deeper LOD loads at (1 = fully zoomed out/home; lower = more zoomed in). ~0.7 leaves room to pan and zoom right after a step-in, and makes the step happen a bit later/deeper on the previous level."}'
