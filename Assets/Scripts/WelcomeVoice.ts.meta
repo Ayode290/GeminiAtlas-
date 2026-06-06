@@ -1,0 +1,77 @@
+- !<AssetImportMetadata/acd3b474-a788-4136-93c8-7f8baedd7cf5>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 4ddc9c37-66f8-4dcf-a081-57727d7d76c8
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 4ddc9c37-66f8-4dcf-a081-57727d7d76c8
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> bc9b9389-de3b-4bb9-8a4d-fd9cccf15597
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/bc9b9389-de3b-4bb9-8a4d-fd9cccf15597>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 45b8cff7-b530-45c8-839d-063ba87dc2e2
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    delaySeconds: false
+    dynamicAudioOutput: false
+    enableLogging: false
+    instructions: false
+    messageText: false
+    model: false
+    voice: false
+    websocketRequirementsObj: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - websocketRequirementsObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      dynamicAudioOutput: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      voice: nova
+      messageText: Welcome back! I found some new places to visit for you -- hope you find some interesting cards there!
+      delaySeconds: !<float> 5.000000
+      instructions: "Speak warmly and cheerfully, like greeting a returning friend."
+      model: gpt-4o-mini-tts
+      enableLogging: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Agent Voice (Gemini Live)</span>"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Speaks via Gemini Live through the Remote Service Gateway. Says the welcome line a few seconds after launch; speak(text) drives later agent lines. Does NOT run in the simulator — test on device with internet.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Setup (drag from the RemoteServiceGatewayExamples prefab)"}'
+    - "// @input SceneObject websocketRequirementsObj {\"hint\":\"The 'Websocket requirements' SceneObject from the RemoteServiceGatewayExamples prefab. Enabled on launch so the gateway WebSocket can connect.\"}"
+    - "// @input AssignableType dynamicAudioOutput {\"hint\":\"The 'DynamicAudioOutput' object from the RemoteServiceGatewayExamples prefab (it carries the AudioComponent + audio-output track that plays the voice).\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Speech"}'
+    - '// @input string voice = "Leda" {"widget":"combobox", "values":[{"label":"Leda", "value":"Leda"}, {"label":"Puck", "value":"Puck"}, {"label":"Charon", "value":"Charon"}, {"label":"Kore", "value":"Kore"}, {"label":"Fenrir", "value":"Fenrir"}, {"label":"Aoede", "value":"Aoede"}, {"label":"Orus", "value":"Orus"}, {"label":"Zephyr", "value":"Zephyr"}]}'
+    - '// @input string messageText = "Welcome back! I found some new places to visit for you -- hope you find some interesting cards there!" {"hint":"Exact line spoken a few seconds after launch", "widget":"text_area"}'
+    - '// @input float delaySeconds = 5 {"hint":"Seconds after launch before the welcome line"}'
+    - "// @input string instructions = \"You are a text-to-speech voice, not a conversational assistant. Speak the user's message aloud exactly as written -- word for word -- with no additions, omissions, replies, greetings, or commentary. Never react or respond to the content; only read it aloud, in a warm and friendly tone.\" {\"hint\":\"System instruction. The verbatim-narrator prompt makes Gemini read lines exactly instead of chatting back.\", \"widget\":\"text_area\"}"
+    - "// @input string model = \"gemini-live-2.5-flash\" {\"hint\":\"Gemini Live model id (no 'models/' prefix — it's added automatically). Supported: gemini-live-2.5-flash, gemini-2.0-flash-live-preview-04-09, gemini-live-2.5-flash-preview-native-audio\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Logging"}'
+    - // @input bool enableLogging = true
+    - '// @ui {"widget":"group_end"}'

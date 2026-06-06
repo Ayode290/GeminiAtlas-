@@ -15,14 +15,14 @@ metaInfo:
     []
   lensName: TriviaGo
   lensDescriptors:
-    - EXPERIMENTAL_API
+    - GEN_AI_ICON
   lensApplicability:
     - Front
     - Back
   lensClientCompatibilities:
     - Spectacles
   platformBundlesEnabled: false
-  iconHash: ""
+  iconHash: 17cd472fa5c6061f376a7f9d5b7f6438
   videoPreviewHash: ""
   fromTemplateName: Crop
   fromTemplateUrl: Lens Studio 5.15.4.26022322
