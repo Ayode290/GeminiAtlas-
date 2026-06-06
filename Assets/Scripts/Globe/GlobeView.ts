@@ -16,7 +16,7 @@
  * PingController). Aim/zoom/alpha are tweened in a single UpdateEvent.
  */
 import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
-import { LatLng, Easing, aimEuler, dockScaleForSpan, easeInOutCubic, clamp01, lerp } from "./GeoMath";
+import { LatLng, Easing, aimEuler, dockScaleForSpan, spanForDockScale, easeInOutCubic, clamp01, lerp } from "./GeoMath";
 
 /**
  * Per-channel easing for a pose tween. Each channel (position / rotation / scale
@@ -68,9 +68,11 @@ export class GlobeView extends BaseScriptComponent {
   @hint("Sphere radius in cm at scale = 1. Leave at 0 to AUTO-DETECT from the mesh bounding box (recommended). Set > 0 to override.")
   globeRadiusCm: number = 0
 
-  @input
-  @hint("On-screen size in cm of the holodeck table. dockScaleForSpan scales the globe so its L0 footprint roughly matches the table.")
-  tableSizeCm: number = 60
+  // On-screen size in cm of the holodeck table; dockScaleForSpan/spanForScale use
+  // it to match the globe footprint to the table. NOT an @input: GlobeController
+  // owns the single authored value and pushes it here via setTableSizeCm so the
+  // table size can never drift between the globe, the table mesh, and panning.
+  private tableSizeCm: number = 60
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -106,9 +108,29 @@ export class GlobeView extends BaseScriptComponent {
 
   // --- Public API ------------------------------------------------------------
 
+  /** Sets the shared table size (cm). Called by GlobeController at startup. */
+  setTableSizeCm(cm: number): void {
+    this.tableSizeCm = Math.max(1, cm)
+  }
+
   /** The globe scale whose footprint matches the table showing `spanDeg`. */
   dockScaleForSpan(spanDeg: number): number {
     return dockScaleForSpan(spanDeg, this.getRadiusCm(), this.tableSizeCm)
+  }
+
+  /** Inverse of {@link dockScaleForSpan}: the table-footprint span at `scale`. */
+  spanForScale(scale: number): number {
+    return spanForDockScale(scale, this.getRadiusCm(), this.tableSizeCm)
+  }
+
+  /** The globe's current zoom scale (multiplier on the authored base scale). */
+  getScale(): number {
+    return this.currentScale
+  }
+
+  /** The globe's current opacity (0..1). */
+  getAlpha(): number {
+    return this.currentAlpha
   }
 
   /**

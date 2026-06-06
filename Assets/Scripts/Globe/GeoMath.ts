@@ -264,3 +264,19 @@ export function dockScaleForSpan(
   const r = Math.max(1e-6, globeRadiusCm);
   return tableSizeCm / (r * spanRad);
 }
+
+/**
+ * Inverse of {@link dockScaleForSpan}: the geographic span (degrees) whose globe
+ * surface patch fills the table at a given globe `scale`. Used during the dive to
+ * read the globe's live footprint span so the table can be framed to match it.
+ */
+export function spanForDockScale(
+  scale: number,
+  globeRadiusCm: number,
+  tableSizeCm: number
+): number {
+  const r = Math.max(1e-6, globeRadiusCm);
+  const s = Math.max(1e-6, scale);
+  const spanRad = tableSizeCm / (r * s);
+  return spanRad / DEG2RAD;
+}

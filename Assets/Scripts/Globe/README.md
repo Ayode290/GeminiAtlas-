@@ -54,10 +54,20 @@ so framing and alignment can never drift (the generator even regenerates
 
 ```bash
 pip install requests pillow
-python tools/generate_map_textures.py            # all cities
-python tools/generate_map_textures.py --only Tokyo
-python tools/generate_map_textures.py --dry-run  # print the tile plan only
+python tools/generate_map_textures.py                  # all levels, all cities
+python tools/generate_map_textures.py --only Tokyo     # one city
+python tools/generate_map_textures.py --dry-run        # print the tile plan only
+
+# Capture ONLY the wide L-1 handoff textures (skips L0..Ln, which are cached):
+python tools/generate_map_textures.py --transition-only
+python tools/generate_map_textures.py --transition-only --only Tokyo
+python tools/generate_map_textures.py --transition-only --dry-run   # preview tiles
 ```
+
+> The L-1 captures are large (4.5° span at `outSize 2048` ⇒ ~220–280 OSM tiles
+> each; the tool warns past 256 but proceeds). With the polite ~1.5–4 s/tile pacing
+> the first run takes a while; tiles are cached so re-runs are fast. Lower
+> `transition.outSize` in `cityBounds.json` if you want fewer tiles.
 
 The tool reads `cityBounds.json`, computes the Web-Mercator slippy-tile range for
 each LOD's bbox at a zoom that meets `outSize`, fetches OSM tiles (descriptive
@@ -65,6 +75,16 @@ each LOD's bbox at a zoom that meets `outSize`, fetches OSM tiles (descriptive
 power-of-two PNG, and writes `Assets/Textures/Globe/<city>_L<n>.png`. It then
 rewrites `cityBounds.ts` from the JSON.
 
+- **Single source of truth — levels, degrees, sizes:** every span/size used by
+  BOTH the capture and the in-lens math lives in `cityBounds.json` (mirrored to
+  `cityBounds.ts` by the tool — never hand-edit the `.ts`). This includes the wide
+  **handoff capture (L-1)**: the JSON's `transition` block (`spanMultiple`,
+  `outSize`, `labelSuffix`) is the *one place* defining it. The tool derives each
+  city's L-1 as a square of `spanMultiple × that city's L0 span`, centered on L0,
+  captured at `outSize`, and writes `Assets/Textures/Globe/<city>_L-1.png` plus a
+  `transition:` entry in `cityBounds.ts`. Change `spanMultiple` (e.g. 10 → 8) once
+  and every city's handoff rescales — capture and runtime can't drift. Assign the
+  generated `_L-1.png` to each city's **transition texture** input on `CityData`.
 - **Provider-agnostic:** the tile URL template lives in `cityBounds.json`
   (`provider.urlTemplate`). OSM road tiles by default; swap for a keyed/satellite
   provider with no code change.
@@ -87,12 +107,13 @@ a textured globe mesh and the table's material graph.
    an **equirectangular base Earth texture** (hand-imported, e.g.
    `Assets/Textures/Globe/earth_equirect.png`). Add `GlobeView` to it. Leave
    `globeRadiusCm` at **0** to **auto-detect** the radius from the mesh AABB
-   (override only if you want a specific value); set `tableSizeCm` to your table
-   size.
+   (override only if you want a specific value). **Table size is set in ONE place
+   — `GlobeController.tableSizeCm`** (pushed to `GlobeView` and `MapViewport` at
+   startup); there is no per-component table-size field to keep in sync.
 2. **Map table**: add `MapViewport` to an empty object. Leave `tableVisual`
-   **empty** and the component **builds a flat quad by code** (size `tableSizeCm`,
-   `windowUV` 0..1, lying in the local **XZ plane** with its face pointing **+Y**,
-   so it reads as a horizontal table). Assign the table **material graph** (below)
+   **empty** and the component **builds a flat quad by code** (sized from the
+   controller's `tableSizeCm`, `windowUV` 0..1, lying in the local **XZ plane**
+   with its face pointing **+Y**, so it reads as a horizontal table). Assign the table **material graph** (below)
    to `tableMaterial`. (You can still assign a pre-made `tableVisual` to opt out of
    code geometry.) Note: a flat table is edge-on from a head-on camera — tilt the
    editor camera **down** toward it, or place it lower/in front, to see its face.
@@ -166,6 +187,32 @@ Two input paths are **always active** — hands (device) and touch (editor + pho
   not a swap to an unrelated place). L0 enters partly zoomed (`lodEnterZoom`) so
   there's pan room immediately, and the globe footprint is sized to that same span
   so the handoff lines up by construction.
+- **Continuous co-zoom handoff (the "critical level")**: when a city has a wide
+  **L-1** capture (`transitionLevel`, 10× L0's span — see *Single source of truth*
+  below), the table doesn't pop in at the final size; it **co-zooms with the globe**.
+  The dive is timed around the *critical level* — the moment the globe's surface
+  footprint span equals the L-1 span:
+  - **Scale** runs the whole dive as one continuous curve (the footprint zoom
+    never changes pace — that is what lets the table match the globe by span alone).
+  - **Rotation + position finish *by* the critical level** (a hard deadline). Their
+    `*Speed` knobs may finish them *earlier*, but **never later** — so after critical
+    only the zoom is changing and the globe↔table match depends on span alone, with
+    no extra matching math. *(This is a deliberate timing constraint.)*
+  - The globe **fades out** while the table **fades in** (table opacity =
+    `1 − globeAlpha`) over **[critical, L0-home]** — the fade **completes the instant
+    L0 fills the table** (100% zoom), NOT at the end of the dive. Every frame the
+    table is reframed to the globe's **live footprint span** (`GlobeView.spanForScale`):
+    it rides the wide L-1 capture and **switches to sharp L0 the instant L0 fits the
+    table** (where L0 is exactly in bounds). So at 100% the globe is gone and a
+    fully-opaque sharp L0 is showing; the remaining dive is a real **100%→70%** L0
+    zoom in to the `lodEnterZoom` enter framing — visible *before* the dive finishes,
+    not revealed only at the end. *(Both the texture switch and the fade complete at
+    100%; the fade window, not the texture crossfade, is what made L0 look late.)*
+  - The swap is **direction-aware**: on the way out the table instead starts on
+    sharp L0 and crossfades to the wide L-1 across a small band *above* home, so the
+    return begins crisp (no blur pop) and only goes wide as it zooms back out.
+  - If a city has **no** L-1 texture assigned, the dive falls back to the plain
+    "table fades in at the final framing" behavior — nothing breaks.
 - **Top-tip pivot**: position and scale pivot about the globe's **top tip** (its
   world-up-most surface point, independent of rotation), not its center. The dive
   animates that tip from the overview globe's top onto the **table center** while
@@ -178,6 +225,11 @@ Two input paths are **always active** — hands (device) and touch (editor + pho
   **+1** = front-loaded (fast start, gentle finish), **-1** = back-loaded (slow
   start, fast finish); magnitude is the strength. One intuitive number per channel
   instead of opaque mode codes.
+- **Dive speed (per-channel)**: `positionSpeed` / `rotationSpeed` / `scaleSpeed` /
+  `fadeSpeed` scale each channel's clock — `1` uses the full dive duration, `2`
+  finishes in half the time (then holds at target), `<1` is slower. Bias only
+  reshapes a channel; **speed** is what makes it actually finish sooner (e.g. raise
+  `rotationSpeed` to snap the city to the top quickly while the zoom keeps gliding).
 - **`fadeOutGlobe`** (debug): turn OFF to keep the globe fully visible at the dock
   pose (it isn't faded or disabled) so you can verify the location lands on TOP
   with the correct orientation; turn back ON for the normal crossfade.
@@ -188,7 +240,12 @@ Two input paths are **always active** — hands (device) and touch (editor + pho
   previous level therefore zooms a bit deeper before the (seamless) switch.
 - **Back (reverse dive)**: zoom out past L0 home → ZOOMING_OUT. The globe
   reappears matching the current table view, then un-dives back to the OVERVIEW
-  pose captured at selection while the table fades out in place.
+  pose captured at selection while the table co-zooms back **out** with it (sharp
+  L0 → wide L-1 past home) and fades out against the reappearing globe. It mirrors
+  the entry around the *reverse* critical level: the globe **fades back in by the
+  critical level**, then **un-rotates / un-positions** outward (each channel uses
+  the reversed curve, so the timing/feel mirror the way in). Without an L-1 capture
+  it's a plain `1 - f(1 - t)` film-reverse with a table fade-out.
 
 ---
 
@@ -226,9 +283,12 @@ during the tween.
 
 Produced by `generate_map_textures.py` into `Assets/Textures/Globe/`:
 
-- `Tokyo_L0.png`, `Tokyo_L1.png`, `Tokyo_L2.png`
-- `Seattle_L0.png`, `Seattle_L1.png`, `Seattle_L2.png`
-- `Los Angeles_L0.png`, `Los Angeles_L1.png`, `Los Angeles_L2.png`
+- `Tokyo_L-1.png`, `Tokyo_L0.png`, `Tokyo_L1.png`, `Tokyo_L2.png`
+- `Seattle_L-1.png`, `Seattle_L0.png`, `Seattle_L1.png`, `Seattle_L2.png`
+- `Los Angeles_L-1.png`, `Los Angeles_L0.png`, `Los Angeles_L1.png`, `Los Angeles_L2.png`
+
+`_L-1.png` is the wide handoff capture (10× L0 span, `outSize` 2048) used only for
+the globe↔table co-zoom; assign it to each city's transition texture on `CityData`.
 
 Hand-imported (not generated):
 

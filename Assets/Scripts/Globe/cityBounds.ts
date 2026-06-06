@@ -30,6 +30,8 @@ export interface CityBoundsEntry {
   name: string;
   centerLatLng: LatLng;
   levels: LodBoundsEntry[];
+  /** Wide 'L-1' capture for the globe<->table handoff (not a navigable level). */
+  transition?: LodBoundsEntry;
 }
 
 /** The globe base (hand-imported equirectangular Earth texture). */
@@ -55,6 +57,7 @@ export const CITY_BOUNDS: CityBoundsEntry[] = [
       { level: 1, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 0.14, outSize: 1024, label: "Tokyo · closer", texturePath: "Assets/Textures/Globe/Tokyo_L1.png" },
       { level: 2, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 0.045, outSize: 1024, label: "Tokyo · streets", texturePath: "Assets/Textures/Globe/Tokyo_L2.png" },
     ],
+    transition: { level: -1, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 4.5, outSize: 2048, label: "Tokyo region", texturePath: "Assets/Textures/Globe/Tokyo_L-1.png" },
   },
   {
     name: "Seattle",
@@ -64,6 +67,7 @@ export const CITY_BOUNDS: CityBoundsEntry[] = [
       { level: 1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.14, outSize: 1024, label: "Seattle · closer", texturePath: "Assets/Textures/Globe/Seattle_L1.png" },
       { level: 2, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.045, outSize: 1024, label: "Seattle · streets", texturePath: "Assets/Textures/Globe/Seattle_L2.png" },
     ],
+    transition: { level: -1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 4.5, outSize: 2048, label: "Seattle region", texturePath: "Assets/Textures/Globe/Seattle_L-1.png" },
   },
   {
     name: "Los Angeles",
@@ -73,5 +77,6 @@ export const CITY_BOUNDS: CityBoundsEntry[] = [
       { level: 1, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 0.14, outSize: 1024, label: "Los Angeles · closer", texturePath: "Assets/Textures/Globe/Los Angeles_L1.png" },
       { level: 2, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 0.045, outSize: 1024, label: "Los Angeles · streets", texturePath: "Assets/Textures/Globe/Los Angeles_L2.png" },
     ],
+    transition: { level: -1, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 4.5, outSize: 2048, label: "Los Angeles region", texturePath: "Assets/Textures/Globe/Los Angeles_L-1.png" },
   },
 ];

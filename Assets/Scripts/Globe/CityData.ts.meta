@@ -30,8 +30,11 @@
     enableLoggingLifecycle: false
     globeBaseTexture: false
     losAngelesLevels: false
+    losAngelesTransition: false
     seattleLevels: false
+    seattleTransition: false
     tokyoLevels: false
+    tokyoTransition: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -44,10 +47,13 @@
     - globeBaseTexture: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       tokyoLevels: !<reference.Texture[]>
         []
+      tokyoTransition: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       seattleLevels: !<reference.Texture[]>
         []
+      seattleTransition: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       losAngelesLevels: !<reference.Texture[]>
         []
+      losAngelesTransition: !<reference.Texture> 00000000-0000-0000-0000-000000000000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -61,12 +67,15 @@
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Tokyo LOD textures (L0, L1, L2 in order)</span>"}'
     - '// @input Asset.Texture[] tokyoLevels {"hint":"Generated Tokyo map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @input Asset.Texture tokyoTransition {"hint":"Generated Tokyo WIDE handoff PNG (Tokyo_L-1.png, 10x L0 area). Used only during the globe<->table dive."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Seattle LOD textures (L0, L1, L2 in order)</span>"}'
     - '// @input Asset.Texture[] seattleLevels {"hint":"Generated Seattle map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @input Asset.Texture seattleTransition {"hint":"Generated Seattle WIDE handoff PNG (Seattle_L-1.png, 10x L0 area). Used only during the globe<->table dive."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Los Angeles LOD textures (L0, L1, L2 in order)</span>"}'
     - '// @input Asset.Texture[] losAngelesLevels {"hint":"Generated Los Angeles map PNGs, ordered L0 (largest area) to L2 (block level)."}'
+    - '// @input Asset.Texture losAngelesTransition {"hint":"Generated Los Angeles WIDE handoff PNG (Los Angeles_L-1.png, 10x L0 area). Used only during the globe<->table dive."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - '// @input bool enableLogging {"hint":"Enable general logging"}'

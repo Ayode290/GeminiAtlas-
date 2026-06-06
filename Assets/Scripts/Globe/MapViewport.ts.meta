@@ -32,7 +32,6 @@
     maxUvScale: false
     minUvScale: false
     tableMaterial: false
-    tableSizeCm: false
     tableVisual: false
   ScriptTypesHidden:
     {}
@@ -45,7 +44,6 @@
   DefaultScriptInputs:
     - tableVisual: !<reference.RenderMeshVisual> 00000000-0000-0000-0000-000000000000
       tableMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
-      tableSizeCm: !<float> 60.000000
       minUvScale: 0.340000
       maxUvScale: !<float> 1.000000
       fadeSec: 0.450000
@@ -60,7 +58,6 @@
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
     - '// @input Component.RenderMeshVisual tableVisual {"hint":"OPTIONAL pre-made RenderMeshVisual of the table pane. Leave empty to BUILD a quad by code on this object. If set, its material is cloned."}'
     - '// @input Asset.Material tableMaterial {"hint":"Table material (the graph exposing mapTex / uvOffset / uvScale + a fixed crop mask). Required when the table is built by code; cloned at runtime."}'
-    - '// @input float tableSizeCm = 60 {"hint":"Edge length (cm) of the code-built table quad. Ignored if a tableVisual is assigned. Match GlobeView.tableSizeCm."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Zoom limits (uvScale within a level)</span>"}'
     - '// @input float minUvScale = 0.34 {"hint":"Smallest uvScale allowed while zoomed into a level (shows the least area / most detail). The controller lowers this at runtime (via setMinUvScale) so its deeper per-level step-in thresholds are reachable; this inspector value is just the authored default/floor."}'
