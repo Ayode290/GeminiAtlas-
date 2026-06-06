@@ -420,8 +420,8 @@
       cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       tableObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       labelText: !<reference.Text> 00000000-0000-0000-0000-000000000000
-      approachSec: !<float> 2.000000
-      crossfadeSec: !<float> 2.000000
+      approachSec: 1.500000
+      crossfadeSec: 1.500000
       positionBias: !<float> 1.000000
       rotationBias: !<float> 1.000000
       scaleBias: !<float> -1.000000
