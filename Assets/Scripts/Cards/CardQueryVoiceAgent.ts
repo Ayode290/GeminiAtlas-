@@ -1,0 +1,422 @@
+/**
+ * Specs Inc. 2026
+ * CardQueryVoiceAgent — the voice-driven card-search agent.
+ *
+ * The user, looking at the floating card cosmos above the globe, simply says what
+ * they want ("find cards from Tokyo about botany"). This agent runs a Gemini Live
+ * session with BOTH audio out AND mic in, plus FUNCTION CALLING: the model
+ * extracts the keywords and calls query_cards / clear_query, which a
+ * QueryOrchestrator executes against the CardStore while driving the cosmos
+ * (spin-faster → fly the matches into a front row) and the globe (zoom to where
+ * the cards were captured). After results, the same session answers questions
+ * about whichever result card the user is looking at — no second agent needed,
+ * because the matches' text is already in this session's context.
+ *
+ * SINGLE-SESSION RULE: the RSG gateway keeps only the newest live session alive,
+ * so this agent and CardVoiceAgent must never be connected at once. When this one
+ * starts it suspends CardVoiceAgent; CardVoiceAgent in turn no-ops/delegates while
+ * this is active (see CardVoiceAgent.suspend / isActive checks). This mirrors how
+ * NudgeVoice/WelcomeVoice delegate instead of opening a competing session.
+ *
+ * Lifecycle (lazy ensureStarted, connect, mic→PCM16→realtime_input, audio-out →
+ * DynamicAudioOutput + agentSphere) mirrors CardVoiceAgent. Gemini Live does NOT
+ * run in the Lens Studio simulator — test on device/Spectacles, online.
+ */
+import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
+import { Gemini } from "RemoteServiceGateway.lspkg/HostedExternal/GoogleGenAI";
+import { GeminiTypes } from "RemoteServiceGateway.lspkg/HostedExternal/GoogleGenAITypes";
+import { DynamicAudioOutput } from "RemoteServiceGateway.lspkg/Helpers/DynamicAudioOutput";
+import { MicrophoneRecorder } from "RemoteServiceGateway.lspkg/Helpers/MicrophoneRecorder";
+import { AudioProcessor } from "RemoteServiceGateway.lspkg/Helpers/AudioProcessor";
+import { pcm16Rms, pcm16DurationSec } from "../AudioLevel";
+import { CardDeckController } from "./CardDeckController";
+import { GlobeController } from "../Globe/GlobeController";
+import { QueryOrchestrator, QUERY_TOOL_DECLARATIONS, ToolCall } from "./QueryOrchestrator";
+
+// Seconds the user must look back at the cosmos before the query agent re-arms
+// itself after a captured-card chat handed the live session to CardVoiceAgent.
+const REARM_DWELL_SEC = 1.5;
+
+@component
+export class CardQueryVoiceAgent extends BaseScriptComponent {
+  @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Card Query Voice Agent (Gemini Live + tools)</span>')
+  @ui.label('<span style="color: #94A3B8; font-size: 11px;">Listens in the cosmos view, extracts query keywords via function-calling, drives the deck + globe, then discusses results. Does NOT run in the simulator — test on device with internet.</span>')
+  @ui.separator
+
+  @ui.group_start("Setup (drag from the RemoteServiceGatewayExamples prefab)")
+  @input
+  @hint("The 'Websocket requirements' SceneObject. Enabled on first listen so the gateway WebSocket can connect.")
+  private websocketRequirementsObj: SceneObject;
+
+  @input
+  @hint("A DEDICATED DynamicAudioOutput for this agent's voice (not shared with CardVoiceAgent/WelcomeVoice).")
+  private dynamicAudioOutput: DynamicAudioOutput;
+
+  @input
+  @hint("A DEDICATED MicrophoneRecorder that captures the user's spoken query.")
+  private microphoneRecorder: MicrophoneRecorder;
+  @ui.group_end
+
+  @ui.separator
+  @ui.group_start("Scene references")
+  @input
+  @hint("The CardDeckController whose cosmos this agent drives (spin/results/focus).")
+  private cardDeck: CardDeckController;
+
+  @input
+  @hint("The GlobeController to zoom on a result location. If unset, global.globeController is used.")
+  @allowUndefined
+  private globeController: GlobeController;
+  @ui.group_end
+
+  @ui.separator
+  @ui.group_start("Activation")
+  @input
+  @hint("Automatically open the mic startGraceSec after launch (always-on in the cosmos view). Turn off to start it only via beginListening().")
+  private autoStart: boolean = true;
+
+  @input
+  @hint("Seconds after launch before the agent auto-starts, so it doesn't fire while the welcome voice is still talking (avoids two live sessions at once).")
+  private startGraceSec: number = 6;
+  @ui.group_end
+
+  @ui.separator
+  @ui.group_start("Speech")
+  @input
+  @widget(
+    new ComboBoxWidget([
+      new ComboBoxItem("Leda", "Leda"),
+      new ComboBoxItem("Puck", "Puck"),
+      new ComboBoxItem("Charon", "Charon"),
+      new ComboBoxItem("Kore", "Kore"),
+      new ComboBoxItem("Fenrir", "Fenrir"),
+      new ComboBoxItem("Aoede", "Aoede"),
+      new ComboBoxItem("Orus", "Orus"),
+      new ComboBoxItem("Zephyr", "Zephyr"),
+    ])
+  )
+  private voice: string = "Aoede";
+
+  @input
+  @widget(new TextAreaWidget())
+  @hint("System instruction / persona for the query agent.")
+  private persona: string =
+    "You help the user find AR trivia cards floating in a deck above a globe. When they describe what " +
+    "they want, call query_cards with the location, topic, date range, and/or keyword you extract, and " +
+    "say a short warm line like 'Gotcha — finding those now!'. If query_cards returns zero cards, ask ONE " +
+    "short clarifying question; if the next try still finds nothing, DROP your least-certain keyword and " +
+    "query again, briefly narrating each step so the user follows along. When it returns cards, summarize " +
+    "how many and where (e.g. 'I found 3 cards captured in Tokyo!'). If some matches can't be shown " +
+    "(unshown > 0), mention that. After results, the user may ask about the card they're looking at — I " +
+    "will tell you which card that is; do NOT bring it up or speak about it until they actually ask. Keep " +
+    "replies to one to three warm sentences. To start over or undo, call clear_query.";
+
+  @input
+  @hint("Gemini Live model id (no 'models/' prefix). Supported: gemini-live-2.5-flash, gemini-2.0-flash-live-preview-04-09, gemini-live-2.5-flash-preview-native-audio")
+  private model: string = "gemini-live-2.5-flash";
+  @ui.group_end
+
+  @ui.separator
+  @ui.group_start("Logging")
+  @input private enableLogging: boolean = true;
+  @ui.group_end
+
+  private logger: Logger;
+  private liveSession: ReturnType<typeof Gemini.liveConnect>;
+  private audioProcessor: AudioProcessor = new AudioProcessor();
+  private orchestrator: QueryOrchestrator = null;
+  private sessionReady = false;
+  private setupStarted = false;
+  private connecting = false;
+  private micWired = false;
+  private listening = false;
+  // The result card the user is currently looking at; pushed as context on change.
+  private focusedId: string | null = null;
+  // Seconds since onAwake, so auto-start waits out the launch grace window.
+  private sinceAwake = 0;
+  // True once we've started at least once (first start is time-based; re-arms are gaze-based).
+  private everStarted = false;
+  // How long the user has been looking back at the cosmos this dwell (for re-arm).
+  private gazeDwell = 0;
+
+  onAwake(): void {
+    this.logger = new Logger("CardQueryVoiceAgent", this.enableLogging, true);
+    // Reachable across prefabs (mirrors global.cardVoiceAgent). As with that agent,
+    // do NOTHING heavy at launch — touching mic + a live session at startup blanks
+    // the lens on-device. Everything defers to beginListening().
+    (global as any).cardQueryVoiceAgent = this;
+    this.createEvent("UpdateEvent").bind(() => this.update(getDeltaTime()));
+  }
+
+  /**
+   * Opens the mic and brings the session online so the user can speak a query.
+   * Wire this to whatever marks entry into the globe+cosmos view (NOT launch).
+   * Safe to call repeatedly.
+   */
+  beginListening(): void {
+    this.everStarted = true;
+    this.gazeDwell = 0;
+    this.ensureStarted();
+  }
+
+  /** True when this agent holds a live, ready Gemini session. */
+  isActive(): boolean {
+    return this.sessionReady;
+  }
+
+  /**
+   * Speak a one-off narration line through THIS agent's live session. One-shot
+   * voices (NudgeVoice) call this instead of opening a competing session, since
+   * the gateway keeps only the newest session alive. No-op if not ready.
+   */
+  speakIntent(intent: string): void {
+    if (!intent || intent.trim().length === 0 || !this.sessionReady) return;
+    const turn: GeminiTypes.Live.ClientContent = {
+      client_content: {
+        turns: [{ role: "user", parts: [{ text: intent }] }],
+        turn_complete: true,
+      },
+    };
+    this.liveSession.send(turn);
+  }
+
+  /**
+   * Closes this agent's session and releases the mic so another agent
+   * (CardVoiceAgent) can own the single live session. Re-entrant.
+   */
+  suspend(): void {
+    if (this.listening && this.microphoneRecorder) {
+      try { this.microphoneRecorder.stopRecording(); } catch (e) {}
+      this.listening = false;
+    }
+    if (this.liveSession) {
+      try { (this.liveSession as any).close?.(); } catch (e) {}
+    }
+    this.sessionReady = false;
+    this.connecting = false;
+    this.setupStarted = false; // a later beginListening() reconnects from scratch
+  }
+
+  // --- session lifecycle (mirrors CardVoiceAgent) ----------------------------
+
+  private ensureStarted(): void {
+    if (this.setupStarted) {
+      if (!this.sessionReady && !this.connecting) this.connect();
+      return;
+    }
+    if (!this.dynamicAudioOutput) { this.logger.error("dynamicAudioOutput not assigned."); return; }
+    if (!this.microphoneRecorder) { this.logger.error("microphoneRecorder not assigned."); return; }
+
+    // Single-session rule: take the live slot from CardVoiceAgent if it holds one.
+    const cardAgent = (global as any).cardVoiceAgent;
+    if (cardAgent && typeof cardAgent.suspend === "function") cardAgent.suspend();
+
+    this.setupStarted = true;
+    try {
+      if (this.websocketRequirementsObj) this.websocketRequirementsObj.enabled = true;
+      this.dynamicAudioOutput.initialize(24000);
+      this.microphoneRecorder.setSampleRate(16000);
+      this.connect();
+    } catch (e) {
+      this.logger.error("CardQueryVoiceAgent failed to start: " + e);
+      this.setupStarted = false; // allow a retry
+    }
+  }
+
+  private connect(): void {
+    this.connecting = true;
+    this.liveSession = Gemini.liveConnect();
+
+    this.liveSession.onOpen.add(() => {
+      this.logger.info("Gemini Live connection opened — sending setup");
+
+      const generationConfig: GeminiTypes.Common.GenerationConfig = {
+        responseModalities: ["AUDIO"],
+        temperature: 1,
+        speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: this.voice } } },
+      };
+
+      const setupMessage: GeminiTypes.Live.Setup = {
+        setup: {
+          model: `models/${this.model}`,
+          generation_config: generationConfig,
+          system_instruction: { parts: [{ text: this.persona }] },
+          tools: [{ functionDeclarations: QUERY_TOOL_DECLARATIONS as any }],
+          contextWindowCompression: {
+            triggerTokens: 20000,
+            slidingWindow: { targetTokens: 16000 },
+          },
+          output_audio_transcription: {},
+          input_audio_transcription: {},
+        },
+      };
+      this.liveSession.send(setupMessage);
+    });
+
+    this.liveSession.onMessage.add((message) => this.onMessage(message));
+
+    this.liveSession.onError.add((event) => {
+      this.connecting = false;
+      this.logger.error("Gemini Live error: " + JSON.stringify(event));
+    });
+
+    this.liveSession.onClose.add((event) => {
+      this.sessionReady = false;
+      this.connecting = false;
+      this.logger.warn("Gemini Live closed: " + JSON.stringify(event));
+    });
+  }
+
+  private onMessage(message: any): void {
+    if (message?.setupComplete) {
+      this.sessionReady = true;
+      this.connecting = false;
+      this.logger.success("Gemini Live ready");
+      this.setupMicStreaming();
+      this.startListening();
+      return;
+    }
+
+    // The model decided to run a query / clear — execute it and reply.
+    if (message?.toolCall?.functionCalls) {
+      this.handleToolCall(message.toolCall.functionCalls);
+      return;
+    }
+
+    // Stream spoken audio out as it arrives + feed the orb/ring amplitude.
+    const part = message?.serverContent?.modelTurn?.parts?.[0];
+    if (part?.inlineData?.mimeType?.startsWith("audio/pcm")) {
+      const audio = Base64.decode(part.inlineData.data);
+      this.dynamicAudioOutput.addAudioFrame(audio);
+      (global as any).agentSphere?.noteAudioFrame?.(
+        pcm16Rms(audio, 2),
+        pcm16DurationSec(audio, 24000)
+      );
+      return;
+    }
+
+    if (message?.serverContent?.outputTranscription?.text) {
+      this.logger.info("Agent: " + message.serverContent.outputTranscription.text);
+    }
+    if (message?.serverContent?.inputTranscription?.text) {
+      this.logger.info("User: " + message.serverContent.inputTranscription.text);
+    }
+  }
+
+  private setupMicStreaming(): void {
+    if (this.micWired) return;
+    this.micWired = true;
+    this.audioProcessor.onAudioChunkReady.add((encodedAudioChunk) => {
+      const realtimeInput = {
+        realtime_input: {
+          media_chunks: [{ mime_type: "audio/pcm", data: encodedAudioChunk }],
+        },
+      } as GeminiTypes.Live.RealtimeInput;
+      this.liveSession.send(realtimeInput);
+    });
+    this.microphoneRecorder.onAudioFrame.add((audioFrame) => {
+      this.audioProcessor.processFrame(audioFrame);
+    });
+  }
+
+  private startListening(): void {
+    if (this.listening) return;
+    this.microphoneRecorder.startRecording();
+    this.listening = true;
+    this.logger.info("Microphone listening started — say what cards you're looking for.");
+  }
+
+  // --- tool calls ------------------------------------------------------------
+
+  private handleToolCall(calls: any[]): void {
+    const orch = this.ensureOrchestrator();
+    for (const call of calls) {
+      if (!orch) {
+        this.sendToolResponse(call.id, call.name, { error: "query system unavailable" });
+        continue;
+      }
+      const out = orch.run(call as ToolCall);
+      this.sendToolResponse(call.id, out.name, out.response);
+    }
+  }
+
+  private sendToolResponse(id: string, name: string, response: { [key: string]: any }): void {
+    if (!this.liveSession) return;
+    const msg: GeminiTypes.Live.ToolResponse = {
+      tool_response: { function_responses: [{ id, name, response }] },
+    };
+    this.liveSession.send(msg);
+  }
+
+  private ensureOrchestrator(): QueryOrchestrator | null {
+    if (this.orchestrator) return this.orchestrator;
+    const globe = this.globeController ?? ((global as any).globeController as GlobeController);
+    const store = (global as any).cropCardStore;
+    if (!this.cardDeck || !globe || !store) {
+      this.logger.warn("Orchestrator not ready (deck/globe/store missing).");
+      return null;
+    }
+    this.orchestrator = new QueryOrchestrator(this.cardDeck, globe, store);
+    return this.orchestrator;
+  }
+
+  // --- per-frame: globe reconcile + focus context ----------------------------
+
+  private update(dt: number): void {
+    this.sinceAwake += dt;
+    if (this.orchestrator) this.orchestrator.reconcileGlobe();
+
+    // First start is time-based (always-on once in the cosmos view, after a launch
+    // grace so the welcome voice isn't clobbered). Later re-arms — after a captured
+    // card handed the session to CardVoiceAgent — wait until the user looks back at
+    // the cosmos, so we don't immediately steal it back.
+    if (this.autoStart && !this.sessionReady && !this.connecting && this.sinceAwake >= this.startGraceSec) {
+      if (!this.everStarted) {
+        this.logger.info("Auto-starting the query agent.");
+        this.beginListening();
+      } else if (this.cardDeck && this.cardDeck.isUserGazingAtCosmos()) {
+        this.gazeDwell += dt;
+        if (this.gazeDwell >= REARM_DWELL_SEC) {
+          this.logger.info("User looked back at the cosmos — re-arming the query agent.");
+          this.beginListening();
+        }
+      } else {
+        this.gazeDwell = 0;
+      }
+    }
+
+    if (!this.sessionReady || !this.cardDeck) return;
+
+    const id = this.cardDeck.getFocusedResultId();
+    if (id !== this.focusedId) {
+      this.focusedId = id;
+      if (id) this.pushFocusContext(id);
+    }
+  }
+
+  /**
+   * Silently tells the model which result card the user is now looking at, so it
+   * can answer questions about it. Phrased as quiet context — the persona keeps
+   * the agent from speaking until the user actually asks.
+   */
+  private pushFocusContext(id: string): void {
+    const store = (global as any).cropCardStore;
+    const record = store && typeof store.getById === "function" ? store.getById(id) : null;
+    if (!record) return;
+
+    const text =
+      "[context — do not speak unless asked] The user is now looking at this card:\n" +
+      record.text +
+      "\n(captured in " + record.location + " on " + record.captureDate + "). " +
+      "If they ask about it, answer from this.";
+
+    const turn: GeminiTypes.Live.ClientContent = {
+      client_content: {
+        turns: [{ role: "user", parts: [{ text }] }],
+        turn_complete: true,
+      },
+    };
+    this.liveSession.send(turn);
+  }
+}

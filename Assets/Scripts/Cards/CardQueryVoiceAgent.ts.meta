@@ -1,0 +1,92 @@
+- !<AssetImportMetadata/241eff4a-fddd-43ab-9c37-e6e2c47a5dab>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 5238106c-5e3e-4b44-9b5e-27195870dc2b
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 5238106c-5e3e-4b44-9b5e-27195870dc2b
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 8249183f-bec4-4bee-aa81-07064335e6c1
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/8249183f-bec4-4bee-aa81-07064335e6c1>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 14d84af1-f5c3-4dd2-99ca-3681ce4577af
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    autoStart: false
+    cardDeck: false
+    dynamicAudioOutput: false
+    enableLogging: false
+    globeController: false
+    microphoneRecorder: false
+    model: false
+    persona: false
+    startGraceSec: false
+    voice: false
+    websocketRequirementsObj: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - websocketRequirementsObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      dynamicAudioOutput: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      microphoneRecorder: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      cardDeck: !<MappingBased.AssignableType_2> 00000000-0000-0000-0000-000000000000
+      globeController: !<MappingBased.AssignableType_3> 00000000-0000-0000-0000-000000000000
+      autoStart: true
+      startGraceSec: !<float> 6.000000
+      voice: Aoede
+      persona: ""
+      model: gemini-live-2.5-flash
+      enableLogging: true
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Card Query Voice Agent (Gemini Live + tools)</span>"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Listens in the cosmos view, extracts query keywords via function-calling, drives the deck + globe, then discusses results. Does NOT run in the simulator — test on device with internet.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Setup (drag from the RemoteServiceGatewayExamples prefab)"}'
+    - "// @input SceneObject websocketRequirementsObj {\"hint\":\"The 'Websocket requirements' SceneObject. Enabled on first listen so the gateway WebSocket can connect.\"}"
+    - "// @input AssignableType dynamicAudioOutput {\"hint\":\"A DEDICATED DynamicAudioOutput for this agent's voice (not shared with CardVoiceAgent/WelcomeVoice).\"}"
+    - "// @input AssignableType_1 microphoneRecorder {\"hint\":\"A DEDICATED MicrophoneRecorder that captures the user's spoken query.\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Scene references"}'
+    - '// @input AssignableType_2 cardDeck {"hint":"The CardDeckController whose cosmos this agent drives (spin/results/focus)."}'
+    - '// @input AssignableType_3 globeController {"hint":"The GlobeController to zoom on a result location. If unset, global.globeController is used."}'
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Activation"}'
+    - '// @input bool autoStart = true {"hint":"Automatically open the mic startGraceSec after launch (always-on in the cosmos view). Turn off to start it only via beginListening()."}'
+    - "// @input float startGraceSec = 6 {\"hint\":\"Seconds after launch before the agent auto-starts, so it doesn't fire while the welcome voice is still talking (avoids two live sessions at once).\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Speech"}'
+    - '// @input string voice = "Aoede" {"widget":"combobox", "values":[{"label":"Leda", "value":"Leda"}, {"label":"Puck", "value":"Puck"}, {"label":"Charon", "value":"Charon"}, {"label":"Kore", "value":"Kore"}, {"label":"Fenrir", "value":"Fenrir"}, {"label":"Aoede", "value":"Aoede"}, {"label":"Orus", "value":"Orus"}, {"label":"Zephyr", "value":"Zephyr"}]}'
+    - '// @input string persona {"hint":"System instruction / persona for the query agent.", "widget":"text_area"}'
+    - "// @input string model = \"gemini-live-2.5-flash\" {\"hint\":\"Gemini Live model id (no 'models/' prefix). Supported: gemini-live-2.5-flash, gemini-2.0-flash-live-preview-04-09, gemini-live-2.5-flash-preview-native-audio\"}"
+    - '// @ui {"widget":"group_end"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"group_start", "label":"Logging"}'
+    - // @input bool enableLogging = true
+    - '// @ui {"widget":"group_end"}'
