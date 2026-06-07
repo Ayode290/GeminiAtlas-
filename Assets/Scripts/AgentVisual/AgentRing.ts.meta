@@ -1,0 +1,152 @@
+- !<AssetImportMetadata/f9a3b5a9-9034-40c1-90c4-82d1901c8761>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 49469d8c-58a7-4c56-a37e-47cd30dbcce2
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 49469d8c-58a7-4c56-a37e-47cd30dbcce2
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 6b745a8a-0a5c-4cbc-9867-3c143a511d42
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/6b745a8a-0a5c-4cbc-9867-3c143a511d42>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: a3ee2544-c4ba-4e54-92e0-c368f5f9db6d
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    baseMaterial: false
+    blinkDuration: false
+    blinkIntervalMax: false
+    blinkIntervalMin: false
+    cameraObj: false
+    color0: false
+    color1: false
+    color2: false
+    colorIntensity: false
+    dartAmount: false
+    dartHold: false
+    dartIntervalMax: false
+    dartIntervalMin: false
+    divergence: false
+    divergenceExponent: false
+    enableLogging: false
+    eyeAspect: false
+    eyeColor: false
+    eyeDistance: false
+    eyeForward: false
+    eyeHeight: false
+    eyeSize: false
+    innerFraction: false
+    loudDistortion: false
+    loudSpeed: false
+    noiseScale: false
+    numPoints: false
+    quietDistortion: false
+    quietSpeed: false
+    radius: false
+    showEyes: false
+    zGap: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - baseMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      cameraObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      color0: !<Vec4> {x: 0.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      color1: !<Vec4> {x: 1.000000, y: 0.000000, z: 1.000000, w: 1.000000}
+      color2: !<Vec4> {x: 1.000000, y: 1.000000, z: 0.000000, w: 1.000000}
+      colorIntensity: 0.700000
+      radius: !<float> 3.000000
+      innerFraction: 0.120000
+      numPoints: !<float> 64.000000
+      noiseScale: 0.500000
+      zGap: 0.050000
+      quietDistortion: 1.500000
+      loudDistortion: !<float> 7.000000
+      quietSpeed: 0.150000
+      loudSpeed: 1.200000
+      divergence: 1.600000
+      divergenceExponent: 1.500000
+      showEyes: true
+      eyeColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      eyeSize: 0.400000
+      eyeAspect: !<float> 1.000000
+      eyeDistance: 1.600000
+      eyeHeight: 0.400000
+      eyeForward: 0.500000
+      blinkIntervalMin: 2.500000
+      blinkIntervalMax: !<float> 6.000000
+      blinkDuration: 0.120000
+      dartIntervalMin: 1.500000
+      dartIntervalMax: 4.500000
+      dartHold: 0.400000
+      dartAmount: 0.250000
+      enableLogging: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - "// @ui {\"widget\":\"label\", \"label\":\"<span style=\\\"color: #60A5FA;\\\">AgentRing – the voice agent's animated circle</span><br/><span style=\\\"color: #94A3B8; font-size: 11px;\\\">Three additive CMY noisy discs that read as a white circle when quiet and bloom into colored fringes with voice amplitude. Reads global.agentSphere.getAudioLevel().</span>\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Asset.Material baseMaterial {"hint":"Base material CLONED per layer (its baseColor/blend are overwritten — the asset is never mutated). Any unlit material works; an additive one is ideal."}'
+    - '// @input SceneObject cameraObj {"hint":"Head camera object. Used to billboard the circle to fully face the viewer each frame. If unset, billboarding is disabled."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Layer Colors (additive → white where they overlap)</span>"}'
+    - "// @input vec4 color0 = {0,1,1,1}"
+    - "// @input vec4 color1 = {1,0,1,1}"
+    - "// @input vec4 color2 = {1,1,0,1}"
+    - '// @input float colorIntensity = 0.7 {"hint":"Brightness multiplier applied to all three layer colors (additive blend can clip; lower this if the white core blows out)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Shape</span>"}'
+    - '// @input float radius = 3 {"hint":"Ring outer radius in cm (local)."}'
+    - "// @input float innerFraction = 0.12 {\"hint\":\"Ring band thickness as a fraction of the radius (the inner rim sits at radius*(1-this)). Small = thin ring; 1 = solid disc. Matches BubbleMesh's Inner Fraction.\"}"
+    - '// @input float numPoints = 64 {"hint":"Rim points per ring. Higher = smoother circle, more CPU. 48–72 is a good range."}'
+    - '// @input float noiseScale = 0.5 {"hint":"Perlin sampling scale — higher = more, tighter wobbles around the rim."}'
+    - "// @input float zGap = 0.05 {\"hint\":\"Z gap (cm) between adjacent layers so the planes don't z-fight. Tiny is fine.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Amplitude Response</span>"}'
+    - '// @input float quietDistortion = 1.5 {"hint":"Rim distortion when quiet (small = nearly a clean circle)."}'
+    - '// @input float loudDistortion = 7 {"hint":"Rim distortion at full amplitude (large = dramatic wobble)."}'
+    - '// @input float quietSpeed = 0.15 {"hint":"Undulate speed (noise time advanced per second) when quiet."}'
+    - '// @input float loudSpeed = 1.2 {"hint":"Undulate speed at full amplitude."}'
+    - "// @input float divergence = 1.6 {\"hint\":\"How far the three layers' noise times drift apart at full amplitude. 0 = always matched (always white); higher = more colored fringe when loud.\"}"
+    - '// @input float divergenceExponent = 1.5 {"hint":"Shapes the amplitude→divergence curve. 1 = linear; >1 keeps the circle whiter until the agent gets loud, then blooms color."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Eyes</span>"}'
+    - '// @input bool showEyes = true {"hint":"Draw a pair of white dot eyes in the center of the ring."}'
+    - '// @input vec4 eyeColor = {1,1,1,1} {"hint":"Eye color (RGBA). White reads as classic dot eyes."}'
+    - '// @input float eyeSize = 0.4 {"hint":"Eye half-size in cm (the rect spans ±this in x/y; height is then scaled by the ratio below)."}'
+    - '// @input float eyeAspect = 1 {"hint":"Eye height-to-width ratio. 1 = round dot; >1 = taller (oval); <1 = wider. Blinking scales the height further."}'
+    - '// @input float eyeDistance = 1.6 {"hint":"Horizontal distance (cm) between the two eye centers."}'
+    - '// @input float eyeHeight = 0.4 {"hint":"Vertical offset (cm) of the eyes from the ring center. Positive = higher."}'
+    - '// @input float eyeForward = 0.5 {"hint":"How far to pop the eyes toward the viewer (cm) off the ring plane, so they sit in front of the ring. Larger = more forward."}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Blink (quick vertical squash)</span>"}'
+    - '// @input float blinkIntervalMin = 2.5 {"hint":"Minimum seconds between blinks."}'
+    - '// @input float blinkIntervalMax = 6 {"hint":"Maximum seconds between blinks."}'
+    - '// @input float blinkDuration = 0.12 {"hint":"How long a single blink takes (seconds). ~0.1–0.15 looks natural."}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Dart (small saccade offsets)</span>"}'
+    - '// @input float dartIntervalMin = 1.5 {"hint":"Minimum seconds between darts."}'
+    - '// @input float dartIntervalMax = 4.5 {"hint":"Maximum seconds between darts."}'
+    - '// @input float dartHold = 0.4 {"hint":"How long the eyes hold at a darted position before returning to center (seconds)."}'
+    - '// @input float dartAmount = 0.25 {"hint":"Maximum dart offset in cm (kept small — these are subtle eye flicks)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'

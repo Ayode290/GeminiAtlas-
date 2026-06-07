@@ -22,8 +22,18 @@ import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 
 type SphereState = "panel" | "home" | "card";
 
-// How long after the last audio frame we keep "speaking" (seconds).
-const SPEAK_HOLD = 0.25;
+// Envelope shaping for the amplitude reaction. RMS of speech tends to sit low
+// (~0.1–0.4), so we scale it up before clamping. Attack rises quickly toward the
+// currently-playing frame; release falls back a touch slower so the visual
+// breathes instead of flickering on every frame boundary.
+const LEVEL_GAIN = 3.0;
+const LEVEL_ATTACK = 18; // per-second lerp factor when the level is rising
+const LEVEL_RELEASE = 6; // per-second lerp factor when the level is falling
+
+// Safety cap on how much audio (seconds) we keep scheduled ahead. Gemini bursts
+// a few seconds of frames up front; this only guards against unbounded growth if
+// playback ever stalls (oldest frames are dropped past this).
+const MAX_SCHEDULED_SECONDS = 20;
 
 @component
 export class AgentSphere extends BaseScriptComponent {
@@ -90,6 +100,12 @@ export class AgentSphere extends BaseScriptComponent {
   speakPulse: number = 0.18
 
   @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Audio Reaction</span>')
+  @input
+  @hint("Playout latency compensation (seconds). Audio frames arrive a bit before they're audible (the player buffers first), so the visual is held back by this much at the start of each utterance to line up with the sound. Raise if the animation still races ahead; lower if it lags.")
+  audioLatency: number = 0.2
+
+  @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
   @input
   @hint("Enable general logging")
@@ -108,8 +124,17 @@ export class AgentSphere extends BaseScriptComponent {
   // Smoothed current pose, seeded (snapped) on the first update.
   private currentPos: vec3 | null = null
   private currentRot: quat | null = null
-  // getTime() value until which we consider the agent "speaking".
-  private speakingUntil = 0
+  // Smoothed amplitude envelope (0..1) the ring/orb visual reads each frame.
+  private audioLevel = 0
+  // Playback schedule: per-frame loudness paired with the frame's playback
+  // duration (seconds). Frames arrive in a burst ahead of playback, so we drain
+  // this by real time each update to stay in sync with what's audible.
+  private levelQueue: { rms: number; dur: number }[] = []
+  private scheduledSeconds = 0
+  // Seconds of playout latency still to "wait out" before the schedule starts
+  // draining — primed at the start of each utterance so the visual lines up with
+  // the (slightly delayed) audible playback instead of racing the arriving frames.
+  private playoutDelay = 0
 
   onAwake(): void {
     this.logger = new Logger("AgentSphere", this.enableLogging, true);
@@ -159,9 +184,69 @@ export class AgentSphere extends BaseScriptComponent {
     this.state = "card";
   }
 
-  /** Called when the agent produces an audio frame — drives the talking pulse. */
-  noteAudioFrame(): void {
-    this.speakingUntil = getTime() + SPEAK_HOLD;
+  /**
+   * Called when the agent produces an audio frame. `level` is the frame's RMS
+   * loudness (0..~1 from pcm16Rms); `durationSec` is how long that frame plays
+   * (from pcm16DurationSec). The frame is SCHEDULED so the envelope tracks
+   * playback, not arrival — keeping the visual alive for the whole utterance
+   * even though all the frames land up front. Omit args for a default blip.
+   */
+  noteAudioFrame(level: number = 0.4, durationSec: number = 0): void {
+    const rms = Math.max(0, level);
+    // Without a real duration (legacy callers) fall back to a short blip so the
+    // schedule still advances rather than sticking.
+    const dur = durationSec > 0 ? durationSec : 0.05;
+    // Fresh utterance (nothing scheduled and the envelope has settled to silence):
+    // prime the playout-latency delay so the visual starts when the audio is
+    // actually audible, not when the burst of frames arrives.
+    if (this.levelQueue.length === 0 && this.audioLevel < 0.02) {
+      this.playoutDelay = Math.max(0, this.audioLatency);
+    }
+    this.levelQueue.push({ rms, dur });
+    this.scheduledSeconds += dur;
+    // Drop the oldest scheduled audio if playback has stalled and the queue grows
+    // unbounded (shouldn't happen in normal streaming).
+    while (this.scheduledSeconds > MAX_SCHEDULED_SECONDS && this.levelQueue.length > 1) {
+      this.scheduledSeconds -= this.levelQueue.shift()!.dur;
+    }
+  }
+
+  /** Smoothed amplitude envelope (0..1) for visuals (read by AgentRing). */
+  getAudioLevel(): number {
+    return this.audioLevel;
+  }
+
+  /**
+   * Advances the playback schedule by `dt` and returns the shaped loudness of
+   * whatever is playing now (0 when the schedule has drained = audio finished).
+   */
+  private drainSchedule(dt: number): number {
+    let remaining = dt;
+    // Hold the schedule back by the playout latency first (nothing audible yet).
+    if (this.playoutDelay > 0) {
+      if (this.playoutDelay >= remaining) {
+        this.playoutDelay -= remaining;
+        return 0;
+      }
+      remaining -= this.playoutDelay;
+      this.playoutDelay = 0;
+    }
+    let playing = 0;
+    while (remaining > 0 && this.levelQueue.length > 0) {
+      const seg = this.levelQueue[0];
+      playing = Math.max(playing, seg.rms);
+      if (seg.dur > remaining) {
+        seg.dur -= remaining;
+        this.scheduledSeconds -= remaining;
+        remaining = 0;
+      } else {
+        remaining -= seg.dur;
+        this.scheduledSeconds -= seg.dur;
+        this.levelQueue.shift();
+      }
+    }
+    if (this.scheduledSeconds < 0) this.scheduledSeconds = 0;
+    return Math.min(1, playing * LEVEL_GAIN);
   }
 
   /** Vertical FOV in radians (Camera.fov is radians), with a ~63.5° fallback. */
@@ -254,12 +339,18 @@ export class AgentSphere extends BaseScriptComponent {
     this.sphereTrans.setWorldPosition(this.currentPos);
     this.sphereTrans.setWorldRotation(this.currentRot);
 
-    // Talking pulse: scale up rhythmically while audio is flowing, else relax to base.
-    let scale = this.baseScale;
-    if (getTime() < this.speakingUntil) {
-      const f = 1 + this.speakPulse * 0.5 * (1 + Math.sin(getTime() * 18));
-      scale = this.baseScale.uniformScale(f);
-    }
+    // Advance the amplitude envelope by playback time: target is the loudness of
+    // the frame currently playing (0 once the schedule drains), eased fast up /
+    // slower down. AgentRing reads getAudioLevel() to drive its distortion.
+    const levelTarget = this.drainSchedule(dt);
+    const k = levelTarget > this.audioLevel ? LEVEL_ATTACK : LEVEL_RELEASE;
+    this.audioLevel += (levelTarget - this.audioLevel) * Math.min(1, k * dt);
+
+    // Talking pulse: scale with loudness rather than a fixed on/off sine. With
+    // the AgentRing as the main visual this is a subtle size breath on top of
+    // the noise distortion; keep speakPulse low (or 0) if it feels like too much.
+    const f = 1 + this.speakPulse * this.audioLevel;
+    const scale = this.baseScale.uniformScale(f);
     this.sphereTrans.setLocalScale(vec3.lerp(this.sphereTrans.getLocalScale(), scale, Math.min(1, 12 * dt)));
   }
 }

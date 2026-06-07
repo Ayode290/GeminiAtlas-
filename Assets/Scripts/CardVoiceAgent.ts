@@ -28,6 +28,7 @@ import { GeminiTypes } from "RemoteServiceGateway.lspkg/HostedExternal/GoogleGen
 import { DynamicAudioOutput } from "RemoteServiceGateway.lspkg/Helpers/DynamicAudioOutput";
 import { MicrophoneRecorder } from "RemoteServiceGateway.lspkg/Helpers/MicrophoneRecorder";
 import { AudioProcessor } from "RemoteServiceGateway.lspkg/Helpers/AudioProcessor";
+import { pcm16Rms, pcm16DurationSec } from "./AudioLevel";
 
 @component
 export class CardVoiceAgent extends BaseScriptComponent {
@@ -203,7 +204,13 @@ export class CardVoiceAgent extends BaseScriptComponent {
       if (part?.inlineData?.mimeType?.startsWith("audio/pcm")) {
         const audio = Base64.decode(part.inlineData.data);
         this.dynamicAudioOutput.addAudioFrame(audio);
-        (global as any).agentSphere?.noteAudioFrame?.();
+        // Pass the frame's loudness AND its playback duration so the orb/ring
+        // reacts to amplitude over the whole utterance — frames arrive in a burst
+        // up front, so the visual must be scheduled by playback time, not arrival.
+        (global as any).agentSphere?.noteAudioFrame?.(
+          pcm16Rms(audio, 2),
+          pcm16DurationSec(audio, 24000)
+        );
         return;
       }
 

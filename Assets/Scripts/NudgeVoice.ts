@@ -28,6 +28,7 @@ import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 import { Gemini } from "RemoteServiceGateway.lspkg/HostedExternal/GoogleGenAI";
 import { GeminiTypes } from "RemoteServiceGateway.lspkg/HostedExternal/GoogleGenAITypes";
 import { DynamicAudioOutput } from "RemoteServiceGateway.lspkg/Helpers/DynamicAudioOutput";
+import { pcm16Rms, pcm16DurationSec } from "./AudioLevel";
 
 @component
 export class NudgeVoice extends BaseScriptComponent {
@@ -238,7 +239,12 @@ export class NudgeVoice extends BaseScriptComponent {
       if (part?.inlineData?.mimeType?.startsWith("audio/pcm")) {
         const audio = Base64.decode(part.inlineData.data);
         this.dynamicAudioOutput.addAudioFrame(audio);
-        (global as any).agentSphere?.noteAudioFrame?.();
+        // Loudness + playback duration so the orb/ring stays in sync with the
+        // audible voice (frames arrive in a burst, then play out over seconds).
+        (global as any).agentSphere?.noteAudioFrame?.(
+          pcm16Rms(audio, 2),
+          pcm16DurationSec(audio, 24000)
+        );
       } else if (message?.serverContent?.outputTranscription?.text) {
         this.logger.info("Spoke: " + message.serverContent.outputTranscription.text);
       }

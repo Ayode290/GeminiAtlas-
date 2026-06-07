@@ -26,6 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    audioLatency: false
     cameraObj: false
     cardPadRight: false
     cardPadUp: false
@@ -62,6 +63,7 @@
       rotateSpeed: !<float> 4.000000
       idleBob: 0.400000
       speakPulse: 0.180000
+      audioLatency: 0.200000
       enableLogging: false
   ScriptTypes:
     -
@@ -89,6 +91,9 @@
     - '// @input float rotateSpeed = 4 {"hint":"Rotation follow speed for the yaw-only billboard (slerp factor = rotateSpeed * dt)."}'
     - '// @input float idleBob = 0.5 {"hint":"Amplitude (cm) of the subtle idle bob (folded into the target so it stays smooth)."}'
     - '// @input float speakPulse = 0.18 {"hint":"Extra scale fraction applied while the agent is speaking."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Audio Reaction</span>"}'
+    - "// @input float audioLatency = 0.2 {\"hint\":\"Playout latency compensation (seconds). Audio frames arrive a bit before they're audible (the player buffers first), so the visual is held back by this much at the start of each utterance to line up with the sound. Raise if the animation still races ahead; lower if it lags.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - '// @input bool enableLogging {"hint":"Enable general logging"}'

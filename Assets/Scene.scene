@@ -1604,7 +1604,6 @@
     panelDepth: true
     homeScreenPos: true
     homeDepth: true
-    cardPadRight: true
     cardPadUp: true
     cardPopOut: true
     moveSpeed: true
@@ -1617,18 +1616,19 @@
   ScriptInputs:
     "":
       cameraObj: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
-      sphereObj: !<reference.SceneObject> e8513ef2-35ed-4238-bc44-1ddf3ab38052
+      sphereObj: !<reference.SceneObject> 7078bb10-d01f-4bc5-95f2-81084478f04d
       panelScreenPos: !<Vec2> {x: -0.500000, y: 0.500000}
       panelDepth: !<float> 120.000000
       homeScreenPos: !<Vec2> {x: 0.550000, y: -0.550000}
       homeDepth: !<float> 55.000000
-      cardPadRight: !<float> 3.000000
+      cardPadRight: !<float> 2.000000
       cardPadUp: !<float> 3.000000
       cardPopOut: !<float> 2.000000
       moveSpeed: !<float> 4.000000
       rotateSpeed: !<float> 4.000000
       idleBob: 0.400000
       speakPulse: 0.180000
+      audioLatency: 0.300000
       enableLogging: false
   ScriptTypes:
     "":
@@ -2180,6 +2180,8 @@
     - 1eb376a6-a469-43c9-b736-2b6274ae8da3: 6033befd-6af7-4735-5219-f03175a9ead3
     - 3e3d8e2c-bd87-4ba3-b84f-4290d8bdeb22: 9b8749b4-2eb5-42f5-53ee-6da35d05f7aa
     - 5b25ffe0-9056-4935-b820-88a78173efbb: 2b684c58-b01a-4097-5172-03bd3baa3c74
+    - 7078bb10-d01f-4bc5-95f2-81084478f04d: 39f4f8da-92bc-4607-bd35-78434454aa71
+    - 82eae58a-8ca4-4db8-8e14-39e7b7743289: 8849822f-cd83-4125-bb18-2e84f73b8675
     - e8513ef2-35ed-4238-bc44-1ddf3ab38052: b698a2ce-e5fd-41b4-6669-6f03a021b3a8
   Name: AgentSphere
   Enabled: true
@@ -2191,6 +2193,7 @@
     HasSegmentScaleCompensation: false
   Children:
     - !<own> e8513ef2-35ed-4238-bc44-1ddf3ab38052
+    - !<own> 7078bb10-d01f-4bc5-95f2-81084478f04d
   Components:
     - !<own> 3e3d8e2c-bd87-4ba3-b84f-4290d8bdeb22
 - !<SceneObject/5cb6ee5b-4854-423b-bf0e-7f3486d29f7a>
@@ -2533,6 +2536,21 @@
   ScriptTypes:
     "":
       {}
+- !<SceneObject/7078bb10-d01f-4bc5-95f2-81084478f04d>
+  PrefabRemaps:
+    []
+  Name: AgentRing
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 82eae58a-8ca4-4db8-8e14-39e7b7743289
 - !<SceneObject/71b52915-4ccd-4f76-ad34-ecbb948a8bd9>
   PrefabRemaps:
     []
@@ -2831,6 +2849,62 @@
     []
   Components:
     []
+- !<ScriptComponent/82eae58a-8ca4-4db8-8e14-39e7b7743289>
+  PrefabRemaps:
+    []
+  Name: AgentRing
+  Enabled: true
+  ScriptAsset: !<reference> 49469d8c-58a7-4c56-a37e-47cd30dbcce2
+  ScriptInputsDefault:
+    color0: true
+    color1: true
+    color2: true
+    quietDistortion: true
+    quietSpeed: true
+    divergence: true
+    divergenceExponent: true
+    showEyes: true
+    eyeColor: true
+    enableLogging: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
+      cameraObj: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      color0: !<Vec4> {x: 0.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      color1: !<Vec4> {x: 1.000000, y: 0.000000, z: 1.000000, w: 1.000000}
+      color2: !<Vec4> {x: 1.000000, y: 1.000000, z: 0.000000, w: 1.000000}
+      colorIntensity: 0.800000
+      radius: !<float> 2.000000
+      innerFraction: 0.200000
+      numPoints: !<float> 32.000000
+      noiseScale: !<float> 1.000000
+      zGap: 0.100000
+      quietDistortion: 1.500000
+      loudDistortion: !<float> 6.000000
+      quietSpeed: 0.150000
+      loudSpeed: !<float> 12.000000
+      divergence: 1.600000
+      divergenceExponent: 1.500000
+      showEyes: true
+      eyeColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      eyeSize: 0.080000
+      eyeAspect: !<float> 5.000000
+      eyeDistance: 0.800000
+      eyeHeight: 0.190000
+      eyeForward: !<float> 1.000000
+      blinkIntervalMin: 1.800000
+      blinkIntervalMax: !<float> 4.000000
+      blinkDuration: 0.100000
+      dartIntervalMin: !<float> 3.000000
+      dartIntervalMax: !<float> 6.000000
+      dartHold: 1.800000
+      dartAmount: 0.500000
+      enableLogging: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/8312b4bc-be37-4cf2-9a3d-4e73a0c681d7>
   PrefabRemaps:
     []
@@ -4981,7 +5055,7 @@
   PrefabRemaps:
     []
   Name: SphereVisual
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
