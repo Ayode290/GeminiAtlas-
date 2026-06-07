@@ -98,6 +98,8 @@ export class NudgeVoice extends BaseScriptComponent {
   private sessionReady = false;
   // Intents sent before the session was ready, flushed in order on setupComplete.
   private pendingIntents: string[] = [];
+  // True once the single nudge line has been delivered (then the session closes).
+  private done = false;
 
   onAwake(): void {
     this.logger = new Logger("NudgeVoice", this.enableLogging, true);
@@ -139,9 +141,16 @@ export class NudgeVoice extends BaseScriptComponent {
       return;
     }
 
-    // Gemini Live streams audio back at 24 kHz.
-    this.dynamicAudioOutput.initialize(24000);
-    this.connect();
+    // If the card conversation already owns the single live session, DON'T open a
+    // competing one — the gateway evicts/zombifies the older session on a new
+    // connect. We'll deliver the nudge through the card agent at speak time.
+    if (this.cardSessionActive()) {
+      this.logger.info("Card session active — will delegate nudge (no own session).");
+    } else {
+      // Gemini Live streams audio back at 24 kHz.
+      this.dynamicAudioOutput.initialize(24000);
+      this.connect();
+    }
 
     const speakEvent = this.createEvent("DelayedCallbackEvent");
     speakEvent.bind(() => this.onSpeakTime());
@@ -153,7 +162,21 @@ export class NudgeVoice extends BaseScriptComponent {
       this.logger.info("World discovered during lead window — skipping nudge.");
       return;
     }
+    // Prefer delegating to the card agent's session. This also covers the case
+    // where a card was captured during our lead window and evicted our own socket.
+    if (this.cardSessionActive()) {
+      this.logger.info("Delegating nudge to CardVoiceAgent session.");
+      (global as any).cardVoiceAgent.speakIntent(this.nudgeIntent);
+      if (this.sessionReady) this.disconnect(); // close our own if we opened one
+      return;
+    }
     this.speakIntent(this.nudgeIntent);
+  }
+
+  /** True if the card agent currently holds the live session we should reuse. */
+  private cardSessionActive(): boolean {
+    const card = (global as any).cardVoiceAgent;
+    return !!(card && typeof card.isActive === "function" && card.isActive());
   }
 
   /** Connect to Gemini Live and configure audio output with the chosen voice. */
@@ -214,6 +237,14 @@ export class NudgeVoice extends BaseScriptComponent {
       } else if (message?.serverContent?.outputTranscription?.text) {
         this.logger.info("Spoke: " + message.serverContent.outputTranscription.text);
       }
+
+      // One-shot: once the nudge has been fully spoken, close the session so it
+      // doesn't hold a live slot the CardVoiceAgent conversation needs.
+      if (message?.serverContent?.turnComplete && !this.done) {
+        this.done = true;
+        this.logger.info("Nudge delivered — closing session to free a live slot.");
+        this.disconnect();
+      }
     });
 
     this.liveSession.onError.add((event) => {
@@ -249,5 +280,17 @@ export class NudgeVoice extends BaseScriptComponent {
       },
     };
     this.liveSession.send(turn);
+  }
+
+  /** Close the live session once the one-shot nudge has played. */
+  private disconnect(): void {
+    if (this.liveSession) {
+      try {
+        this.liveSession.close();
+      } catch (e) {
+        this.logger.warn("Session close failed: " + e);
+      }
+    }
+    this.sessionReady = false;
   }
 }

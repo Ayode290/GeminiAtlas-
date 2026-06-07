@@ -92,6 +92,8 @@ export class CardVoiceAgent extends BaseScriptComponent {
   private audioProcessor: AudioProcessor = new AudioProcessor();
   private sessionReady = false;
   private setupStarted = false;
+  private connecting = false;
+  private micWired = false;
   private listening = false;
   // Latest card context waiting to be sent once the session is ready.
   private pendingCaption: string | null = null;
@@ -115,7 +117,12 @@ export class CardVoiceAgent extends BaseScriptComponent {
    * device can take the whole lens down).
    */
   private ensureStarted(): void {
-    if (this.setupStarted) return;
+    if (this.setupStarted) {
+      // Already initialized once. If the session has since dropped (e.g. Gemini's
+      // max-duration close), re-establish it so the next card tap still works.
+      if (!this.sessionReady && !this.connecting) this.connect();
+      return;
+    }
     if (!this.dynamicAudioOutput) {
       this.logger.error("dynamicAudioOutput not assigned.");
       return;
@@ -141,6 +148,7 @@ export class CardVoiceAgent extends BaseScriptComponent {
 
   /** Connect a conversational Gemini Live session (audio out + mic in). */
   private connect(): void {
+    this.connecting = true;
     this.liveSession = Gemini.liveConnect();
 
     this.liveSession.onOpen.add(() => {
@@ -178,6 +186,7 @@ export class CardVoiceAgent extends BaseScriptComponent {
     this.liveSession.onMessage.add((message) => {
       if (message?.setupComplete) {
         this.sessionReady = true;
+        this.connecting = false;
         this.logger.success("Gemini Live ready");
         this.setupMicStreaming();
         // If a card was tapped before the session was ready, send it now.
@@ -207,17 +216,25 @@ export class CardVoiceAgent extends BaseScriptComponent {
     });
 
     this.liveSession.onError.add((event) => {
+      this.connecting = false;
       this.logger.error("Gemini Live error: " + JSON.stringify(event));
     });
 
     this.liveSession.onClose.add((event) => {
       this.sessionReady = false;
+      this.connecting = false;
+      // Keep setupStarted/mic wiring intact — the next engageCard() reconnects
+      // via ensureStarted(), reusing the already-initialized mic + audio output.
       this.logger.warn("Gemini Live closed: " + JSON.stringify(event));
     });
   }
 
   /** Wire the mic frame -> PCM16 -> realtime_input pipeline (mirrors ExampleGeminiLive). */
   private setupMicStreaming(): void {
+    // Wire the mic pipeline exactly once. setupComplete fires again on reconnect,
+    // and these handlers read this.liveSession dynamically (always the current one).
+    if (this.micWired) return;
+    this.micWired = true;
     this.audioProcessor.onAudioChunkReady.add((encodedAudioChunk) => {
       const realtimeInput = {
         realtime_input: {
@@ -239,8 +256,9 @@ export class CardVoiceAgent extends BaseScriptComponent {
    */
   engageCard(captionText: string): void {
     if (!captionText || captionText.trim().length === 0) return;
-    // Re-tapping the same card shouldn't re-trigger the opener.
-    if (captionText === this.currentCaption) return;
+    // Re-tapping the active card shouldn't re-trigger the opener — but if the
+    // session has dropped, let the tap through so ensureStarted() reconnects.
+    if (captionText === this.currentCaption && this.sessionReady) return;
     this.currentCaption = captionText;
 
     // First tap spins up the session/mic; later taps reuse it.
@@ -251,6 +269,29 @@ export class CardVoiceAgent extends BaseScriptComponent {
       return;
     }
     this.sendCardContext(captionText);
+  }
+
+  /** True when this agent holds a live, ready Gemini session. */
+  isActive(): boolean {
+    return this.sessionReady;
+  }
+
+  /**
+   * Speak a one-off narration line through THIS agent's live session. Other
+   * one-shot voices (NudgeVoice) call this instead of opening their own session —
+   * the gateway keeps only the newest session alive, so a competing connect would
+   * silently evict (zombify) this conversation.
+   */
+  speakIntent(intent: string): void {
+    if (!intent || intent.trim().length === 0 || !this.sessionReady) return;
+    this.logger.info("Speaking delegated line: " + intent);
+    const turn: GeminiTypes.Live.ClientContent = {
+      client_content: {
+        turns: [{ role: "user", parts: [{ text: intent }] }],
+        turn_complete: true,
+      },
+    };
+    this.liveSession.send(turn);
   }
 
   private sendCardContext(captionText: string): void {

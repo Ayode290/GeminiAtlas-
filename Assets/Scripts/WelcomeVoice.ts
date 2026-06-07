@@ -94,6 +94,9 @@ export class WelcomeVoice extends BaseScriptComponent {
   private logger: Logger;
   private liveSession: ReturnType<typeof Gemini.liveConnect>;
   private sessionReady = false;
+  // Set true when the next completed turn should close the session (the host is a
+  // one-shot narrator; releasing the slot keeps CardVoiceAgent's session alive).
+  private closeAfterTurn = false;
   // Intents sent before the session was ready, flushed in order on setupComplete.
   private pendingIntents: string[] = [];
 
@@ -189,6 +192,14 @@ export class WelcomeVoice extends BaseScriptComponent {
       } else if (message?.serverContent?.outputTranscription?.text) {
         this.logger.info("Spoke: " + message.serverContent.outputTranscription.text);
       }
+
+      // After the host's final line finishes, release the live session so it
+      // doesn't hold a slot the CardVoiceAgent conversation needs.
+      if (message?.serverContent?.turnComplete && this.closeAfterTurn) {
+        this.closeAfterTurn = false;
+        this.logger.info("Host finished — closing session to free a live slot.");
+        this.disconnect();
+      }
     });
 
     this.liveSession.onError.add((event) => {
@@ -224,6 +235,8 @@ export class WelcomeVoice extends BaseScriptComponent {
     const cleaned = (topics ?? []).filter((t) => typeof t === "string" && t.trim().length > 0);
     const topicsText = cleaned.length > 0 ? cleaned.join(", ") : "whatever catches their eye";
     const intent = this.interestsIntentTemplate.split("{topics}").join(topicsText);
+    // This is the host's last line — close the session once it has been spoken.
+    this.closeAfterTurn = true;
     this.speakIntent(intent);
   }
 
@@ -236,5 +249,17 @@ export class WelcomeVoice extends BaseScriptComponent {
       },
     };
     this.liveSession.send(turn);
+  }
+
+  /** Close the live session — the host is a one-shot narrator, so free the slot. */
+  private disconnect(): void {
+    if (this.liveSession) {
+      try {
+        this.liveSession.close();
+      } catch (e) {
+        this.logger.warn("Session close failed: " + e);
+      }
+    }
+    this.sessionReady = false;
   }
 }
