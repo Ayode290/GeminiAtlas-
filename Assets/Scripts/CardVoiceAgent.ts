@@ -264,6 +264,15 @@ export class CardVoiceAgent extends BaseScriptComponent {
    */
   engageCard(captionText: string): void {
     if (!captionText || captionText.trim().length === 0) return;
+    // Single-session rule: take the live slot from the query agent if it holds it
+    // (bidirectional handoff — when the user later looks back at the cosmos the
+    // query agent re-arms itself). Opening a competing session without suspending
+    // it first would silently zombify the query conversation.
+    const queryAgent = (global as any).cardQueryVoiceAgent;
+    if (queryAgent && typeof queryAgent.suspend === "function" && queryAgent.isActive?.()) {
+      this.logger.info("Taking the live session from CardQueryVoiceAgent for this card.");
+      queryAgent.suspend();
+    }
     // Re-tapping the active card shouldn't re-trigger the opener — but if the
     // session has dropped, let the tap through so ensureStarted() reconnects.
     if (captionText === this.currentCaption && this.sessionReady) return;
@@ -282,6 +291,25 @@ export class CardVoiceAgent extends BaseScriptComponent {
   /** True when this agent holds a live, ready Gemini session. */
   isActive(): boolean {
     return this.sessionReady;
+  }
+
+  /**
+   * Closes this agent's session and releases the mic so the CardQueryVoiceAgent
+   * can own the single live session (the gateway keeps only the newest alive).
+   * The next engageCard() reconnects from scratch via ensureStarted(). Re-entrant.
+   */
+  suspend(): void {
+    if (this.listening) {
+      try { this.microphoneRecorder.stopRecording(); } catch (e) {}
+      this.listening = false;
+    }
+    if (this.liveSession) {
+      try { (this.liveSession as any).close?.(); } catch (e) {}
+    }
+    this.sessionReady = false;
+    this.connecting = false;
+    this.setupStarted = false;
+    this.currentCaption = null;
   }
 
   /**

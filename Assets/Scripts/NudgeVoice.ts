@@ -142,11 +142,11 @@ export class NudgeVoice extends BaseScriptComponent {
       return;
     }
 
-    // If the card conversation already owns the single live session, DON'T open a
-    // competing one — the gateway evicts/zombifies the older session on a new
-    // connect. We'll deliver the nudge through the card agent at speak time.
-    if (this.cardSessionActive()) {
-      this.logger.info("Card session active — will delegate nudge (no own session).");
+    // If a conversational agent (card or card-query) already owns the single live
+    // session, DON'T open a competing one — the gateway evicts/zombifies the older
+    // session on a new connect. We'll deliver the nudge through that agent at speak time.
+    if (this.activeConversationalAgent()) {
+      this.logger.info("A conversational agent is active — will delegate nudge (no own session).");
     } else {
       // Gemini Live streams audio back at 24 kHz.
       this.dynamicAudioOutput.initialize(24000);
@@ -167,21 +167,34 @@ export class NudgeVoice extends BaseScriptComponent {
     // the line plays from our own session or is delegated to the card agent).
     const sphere = (global as any).agentSphere;
     if (sphere && typeof sphere.goHome === "function") sphere.goHome();
-    // Prefer delegating to the card agent's session. This also covers the case
-    // where a card was captured during our lead window and evicted our own socket.
-    if (this.cardSessionActive()) {
-      this.logger.info("Delegating nudge to CardVoiceAgent session.");
-      (global as any).cardVoiceAgent.speakIntent(this.nudgeIntent);
+    // Prefer delegating to whichever conversational agent holds the live session.
+    // This also covers the case where a card was captured (or a query started)
+    // during our lead window and evicted our own socket.
+    const agent = this.activeConversationalAgent();
+    if (agent) {
+      this.logger.info("Delegating nudge to the active conversational agent's session.");
+      agent.speakIntent(this.nudgeIntent);
       if (this.sessionReady) this.disconnect(); // close our own if we opened one
       return;
     }
     this.speakIntent(this.nudgeIntent);
   }
 
-  /** True if the card agent currently holds the live session we should reuse. */
-  private cardSessionActive(): boolean {
+  /**
+   * The conversational agent currently holding the single live session, or null.
+   * Prefers the card-query agent (the cosmos-view default) over the card agent.
+   * Both expose isActive()/speakIntent(), so the nudge can ride their session.
+   */
+  private activeConversationalAgent(): any {
+    const query = (global as any).cardQueryVoiceAgent;
+    if (query && typeof query.isActive === "function" && query.isActive() && typeof query.speakIntent === "function") {
+      return query;
+    }
     const card = (global as any).cardVoiceAgent;
-    return !!(card && typeof card.isActive === "function" && card.isActive());
+    if (card && typeof card.isActive === "function" && card.isActive() && typeof card.speakIntent === "function") {
+      return card;
+    }
+    return null;
   }
 
   /** Connect to Gemini Live and configure audio output with the chosen voice. */
