@@ -1,0 +1,99 @@
+/**
+ * Specs Inc. 2026
+ * Plane-space measurement helpers for the Card Backdrop feature.
+ *
+ * Pure geometry, no engine lifecycle: given a plane (an origin plus two in-plane
+ * unit axes) it projects the world-space footprint of one or more mesh visuals
+ * onto that plane and reports the combined min/max extents. Used to size a rect
+ * that wraps a set of coplanar visuals (a captured picture + its caption text).
+ *
+ * Each visual's LOCAL axis-aligned bounding box is transformed by that visual's
+ * own world matrix (so rotation and scale are exact) before projection, rather
+ * than reusing a world AABB, which would over-estimate the size of a tilted card.
+ */
+
+/** A plane defined by a world-space origin and two in-plane unit axes. */
+export interface PlaneBasis {
+  origin: vec3
+  right: vec3
+  up: vec3
+}
+
+/** Min/max extents expressed in plane coordinates (right = u, up = v). */
+export interface PlaneBounds {
+  minU: number
+  maxU: number
+  minV: number
+  maxV: number
+  valid: boolean
+}
+
+/** A centered rect in plane coordinates, ready to drive a BubbleMesh. */
+export interface PlaneRect {
+  width: number
+  height: number
+  centerU: number
+  centerV: number
+}
+
+// The eight corners of a local-space axis-aligned box (min..max).
+function boxCorners(min: vec3, max: vec3): vec3[] {
+  return [
+    new vec3(min.x, min.y, min.z),
+    new vec3(max.x, min.y, min.z),
+    new vec3(min.x, max.y, min.z),
+    new vec3(max.x, max.y, min.z),
+    new vec3(min.x, min.y, max.z),
+    new vec3(max.x, min.y, max.z),
+    new vec3(min.x, max.y, max.z),
+    new vec3(max.x, max.y, max.z),
+  ]
+}
+
+/**
+ * Unions the plane-space footprint of every visual into a single bounds. Skips
+ * any null entry. Returns a fresh bounds object and never mutates its inputs.
+ */
+export function unionVisualBounds(visuals: BaseMeshVisual[], basis: PlaneBasis): PlaneBounds {
+  let minU = Infinity
+  let maxU = -Infinity
+  let minV = Infinity
+  let maxV = -Infinity
+  let valid = false
+
+  for (let i = 0; i < visuals.length; i++) {
+    const visual = visuals[i]
+    if (!visual) continue
+
+    const matrix = visual.getSceneObject().getTransform().getWorldTransform()
+    const corners = boxCorners(visual.localAabbMin(), visual.localAabbMax())
+    for (let c = 0; c < corners.length; c++) {
+      const world = matrix.multiplyPoint(corners[c])
+      const rel = world.sub(basis.origin)
+      const u = rel.dot(basis.right)
+      const v = rel.dot(basis.up)
+      if (u < minU) minU = u
+      if (u > maxU) maxU = u
+      if (v < minV) minV = v
+      if (v > maxV) maxV = v
+      valid = true
+    }
+  }
+
+  return { minU, maxU, minV, maxV, valid }
+}
+
+/** Expands `bounds` by `padding` on every side and converts to a centered rect. */
+export function boundsToRect(bounds: PlaneBounds, padding: number): PlaneRect | null {
+  if (!bounds.valid) return null
+  const pad = Math.max(0, padding)
+  const width = bounds.maxU - bounds.minU + 2 * pad
+  const height = bounds.maxV - bounds.minV + 2 * pad
+  if (!(width > 0) || !(height > 0)) return null
+  return {
+    width,
+    height,
+    centerU: (bounds.minU + bounds.maxU) * 0.5,
+    centerV: (bounds.minV + bounds.maxV) * 0.5,
+  }
+}

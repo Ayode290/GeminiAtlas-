@@ -1,0 +1,78 @@
+- !<AssetImportMetadata/4579ad23-40d3-435e-9c71-071a2ff96ab8>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> a3038d54-99fd-486f-93be-8b43c7fb1c10
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> a3038d54-99fd-486f-93be-8b43c7fb1c10
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> d834bd3a-d518-4278-8e5e-c2497551afa6
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/d834bd3a-d518-4278-8e5e-c2497551afa6>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 8808b4b7-2f60-4cfa-bf92-2eb520c92f7f
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    backOffset: false
+    baseMaterial: false
+    color: false
+    cornerRadius: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    fillOpacity: false
+    numPoints: false
+    padding: false
+    rectLineWidth: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - baseMaterial: !<reference.Material> 00000000-0000-0000-0000-000000000000
+      color: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      padding: 1.500000
+      cornerRadius: !<float> 2.000000
+      rectLineWidth: 0.400000
+      numPoints: !<float> 64.000000
+      fillOpacity: !<float> 1.000000
+      backOffset: 0.300000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">CardBackdropController – wraps each spawned scanner card in a rounded rect</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Watches for Scanner prefab children and spawns a full-morph BubbleMesh sized to enclose the picture and caption.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Material & Color</span>"}'
+    - '// @input Asset.Material baseMaterial {"hint":"Base material cloned onto the backdrop rect. Use an unlit, two-sided material (translucent if you want fill opacity to show)."}'
+    - "// @input vec4 color = {1,1,1,1} {\"hint\":\"Backdrop color (RGBA) applied to the cloned material's baseColor.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Rect Shape</span>"}'
+    - '// @input float padding = 1.5 {"hint":"Padding (cm) added on every side around the measured picture + caption extents."}'
+    - '// @input float cornerRadius = 2 {"hint":"Fixed corner radius (cm) of the wrapping rounded rectangle."}'
+    - '// @input float rectLineWidth = 0.4 {"hint":"Rect band thickness (cm). Thin = an outline frame around the card; raise toward half the shorter side to make it a solid filled panel."}'
+    - '// @input float numPoints = 64 {"hint":"Points per rim of the rounded rect (controls corner smoothness). The ring mesh uses 2x for outer + inner rims."}'
+    - '// @input float fillOpacity = 1 {"hint":"Opacity multiplier for the rect fill (needs a translucent material to show)."}'
+    - '// @input float backOffset = 0.3 {"hint":"Distance (cm) to push the rect behind the card along its plane normal, so it never z-fights the picture or text. Flip the sign if it lands in front."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

@@ -20,6 +20,7 @@
     - !<own> cbc64de6-f36c-4d43-81ed-51724106378c
     - !<own> 88f81952-1481-4cec-af46-2c6672cb056a
     - !<own> df855af7-a6b5-4363-866f-c0bb6422fc98
+    - !<own> 079d7dbb-6472-457e-b075-055cc9c4f264
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       []
@@ -473,6 +474,21 @@
     - !<own> 3e00e273-0f14-47cf-b6a2-496aef455054
   Components:
     []
+- !<SceneObject/079d7dbb-6472-457e-b075-055cc9c4f264>
+  PrefabRemaps:
+    []
+  Name: CardPremadePrefab
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 28.822433, z: -82.457962}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> aa531fe9-f1fd-4bf2-9831-e39f45ed553b
 - !<SceneObject/0a8f776b-dfba-421c-9ab4-b40bbeb3cfd1>
   PrefabRemaps:
     - 0a8f776b-dfba-421c-9ab4-b40bbeb3cfd1: 0e286f31-9210-48d2-5817-7fd3e612ef0c
@@ -1467,6 +1483,7 @@
     - !<own> 0a8f776b-dfba-421c-9ab4-b40bbeb3cfd1
   Components:
     - !<own> 698f5e89-f8f4-4e32-8008-0ad83d59f853
+    - !<own> cdb37c38-7e27-4df9-8c9f-64155418b1e6
 - !<SceneObject/3fc47e57-f34c-4ed1-afb8-922c693071cf>
   PrefabRemaps:
     []
@@ -3165,6 +3182,51 @@
     []
   Components:
     []
+- !<ScriptComponent/aa531fe9-f1fd-4bf2-9831-e39f45ed553b>
+  PrefabRemaps:
+    []
+  Name: BubbleMesh
+  Enabled: true
+  ScriptAsset: !<reference> ad2ee416-a16c-49b0-b7f3-bdf735031fde
+  ScriptInputsDefault:
+    color: true
+    innerFraction: true
+    rectLineWidth: true
+    fillOpacity: true
+    noiseScale: true
+    distortion: true
+    numPoints: true
+    referenceRadius: true
+    undulateSpeed: true
+    targetWidth: true
+    targetHeight: true
+    targetCornerRadius: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
+      color: !<Vec4> {x: 0.200000, y: 0.600000, z: 1.000000, w: 1.000000}
+      innerFraction: 0.100000
+      rectLineWidth: 0.400000
+      fillOpacity: 0.900000
+      radius: !<float> 12.000000
+      noiseScale: 0.480000
+      distortion: !<float> 4.000000
+      numPoints: !<float> 64.000000
+      referenceRadius: !<float> 0.000000
+      undulateSpeed: 0.150000
+      targetWidth: !<float> 12.000000
+      targetHeight: !<float> 8.000000
+      targetCornerRadius: !<float> 2.000000
+      progress: !<float> 1.000000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/abada728-40c2-4e4c-8516-ea9a2d31a962>
   PrefabRemaps:
     []
@@ -3991,6 +4053,36 @@
     - !<own> 3796f29d-c156-4ed0-a6d1-e21bb4f52492
   Components:
     []
+- !<ScriptComponent/cdb37c38-7e27-4df9-8c9f-64155418b1e6>
+  PrefabRemaps:
+    []
+  Name: CardBackdropController
+  Enabled: true
+  ScriptAsset: !<reference> a3038d54-99fd-486f-93be-8b43c7fb1c10
+  ScriptInputsDefault:
+    color: true
+    cornerRadius: true
+    rectLineWidth: true
+    fillOpacity: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
+      color: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      padding: !<float> 1.000000
+      cornerRadius: !<float> 2.000000
+      rectLineWidth: 0.400000
+      numPoints: !<float> 32.000000
+      fillOpacity: !<float> 1.000000
+      backOffset: -0.300000
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/cfa122d8-0a42-44f7-9c9d-f10923115ab9>
   PrefabRemaps:
     []
