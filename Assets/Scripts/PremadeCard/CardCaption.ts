@@ -56,11 +56,16 @@ export class CardCaption extends BaseScriptComponent {
 
   private logger: Logger
   private textTrans: Transform = null
+  // The authored fill alpha, restored whenever the caption is shown.
+  private fullAlpha = 1
 
   onAwake() {
     this.logger = new Logger("CardCaption", this.enableLogging || this.enableLoggingLifecycle, true)
     if (this.enableLoggingLifecycle) this.logger.debug("LIFECYCLE: onAwake()")
-    if (this.captionText) this.textTrans = this.captionText.getSceneObject().getTransform()
+    if (this.captionText) {
+      this.textTrans = this.captionText.getSceneObject().getTransform()
+      this.fullAlpha = this.captionText.textFill.color.a
+    }
   }
 
   /** The text visual, so callers can include it when measuring card bounds. */
@@ -68,9 +73,46 @@ export class CardCaption extends BaseScriptComponent {
     return this.captionText
   }
 
-  /** Shows or hides the caption text object. */
+  /** The vertical gap (cm) kept between the picture and the caption. */
+  getGap(): number {
+    return this.gap
+  }
+
+  /** The caption text object's world scale, for local-unit conversions. */
+  getTextWorldScale(): vec3 {
+    return this.textTrans ? this.textTrans.getWorldScale() : vec3.one()
+  }
+
+  /** Shows or hides the caption text object (restoring its fill alpha when shown). */
   setVisible(visible: boolean): void {
-    if (this.captionText) this.captionText.getSceneObject().enabled = visible
+    if (!this.captionText) return
+    if (visible) this.setFillAlpha(this.fullAlpha)
+    this.captionText.getSceneObject().enabled = visible
+  }
+
+  /**
+   * Puts the caption into a "laid out but invisible" state: enabled (so the text
+   * engine wraps it and getBoundingBox is valid) with zero fill alpha (so it never
+   * draws). Used to measure a collapsed card's true size without any flash.
+   */
+  beginMeasure(): void {
+    if (!this.captionText) return
+    this.setFillAlpha(0)
+    this.captionText.getSceneObject().enabled = true
+  }
+
+  /**
+   * The laid-out text bounds in the text's own local units, or (0,0) when empty.
+   * Deterministic for a given string + font + wrap width; no rendering required.
+   */
+  getTextLocalSize(): vec2 {
+    if (!this.captionText || this.captionText.text.length === 0) return vec2.zero()
+    return this.captionText.getBoundingBox().getSize()
+  }
+
+  private setFillAlpha(alpha: number): void {
+    const c = this.captionText.textFill.color
+    this.captionText.textFill.color = new vec4(c.r, c.g, c.b, alpha)
   }
 
   /**

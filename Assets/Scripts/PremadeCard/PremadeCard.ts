@@ -25,10 +25,9 @@ import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger"
 import { BubbleMesh } from "../Bubbles/BubbleMesh"
 import { CardMorph } from "./CardMorph"
 import { CardCaption } from "./CardCaption"
-import { measureLocalRect } from "./CardLayout"
 
-// Frames to wait after content changes before measuring, so the text component
-// has a chance to lay out before its bounds are read.
+// Frames to wait after content changes before reading the text bounds, so the
+// text engine has laid the (invisibly-enabled) text out before it is measured.
 const MEASURE_DELAY_FRAMES = 2
 
 // Render order applied to a card's visuals while it is pulled to the front as a
@@ -146,12 +145,9 @@ export class PremadeCard extends BaseScriptComponent {
   private started = false
   private ownershipTaken = false
   private lastContentVisible = false
-  // > 0 while a measure pass is pending (content forced visible until it fires).
+  // > 0 while a measure pass is pending. The text is laid out invisibly during
+  // this window, so a collapsed card is measured without ever flashing.
   private measureCountdown = -1
-  // Auto-fit bookkeeping: only measure while content is genuinely shown, so a
-  // card that starts (or sits) as a bubble never flashes its content.
-  private measuredOnce = false
-  private needsMeasure = false
   // Gaze dwell accumulator + precomputed cone cosine.
   private gazeTimer = 0
   private gazeCosThreshold = -1
@@ -188,12 +184,11 @@ export class PremadeCard extends BaseScriptComponent {
     this.started = true
 
     this.billboardNow()
-    this.relayoutContent()
+    // Establish the base visibility, then lay out + measure. Because the text is
+    // measured invisibly and the picture size is computed, the border target is
+    // known before the first morph, so the bubble -> card animation never snaps.
     this.applyContentVisibility(this.lastContentVisible)
-    // Measure now only if content is already shown; otherwise defer to first open
-    // so a collapsed card never flashes its content.
-    if (this.lastContentVisible) this.beginMeasurePass()
-    else this.needsMeasure = true
+    this.relayoutContent()
   }
 
   // --- public API ------------------------------------------------------------
@@ -297,8 +292,8 @@ export class PremadeCard extends BaseScriptComponent {
       this.borderBubble.advance(dt)
     }
 
-    // While a measure pass is pending, keep content forced-visible (set in
-    // beginMeasurePass) so the text lays out, then measure and restore.
+    // While a measure pass is pending, the text is laid out invisibly. Once it
+    // has settled, read its bounds, fit the border, and apply real visibility.
     if (this.measureCountdown > 0) {
       this.measureCountdown--
       if (this.measureCountdown === 0) {
@@ -313,8 +308,6 @@ export class PremadeCard extends BaseScriptComponent {
     if (visible !== this.lastContentVisible) {
       this.applyContentVisibility(visible)
       this.lastContentVisible = visible
-      // Now that content is genuinely shown, fit the border if it's pending.
-      if (visible && (this.needsMeasure || !this.measuredOnce)) this.beginMeasurePass()
     }
   }
 
@@ -346,13 +339,17 @@ export class PremadeCard extends BaseScriptComponent {
   }
 
   private resizePicture(): void {
-    if (!this.pictureVisual) return
+    if (!this.pictureVisual || !this.trans) return
     const aspect = this.imageAspect()
     const width = this.imageWidth > 0 ? this.imageWidth : 1
     const height = width / aspect
     const pTrans = this.pictureVisual.getSceneObject().getTransform()
-    pTrans.setLocalPosition(vec3.zero())
     pTrans.setLocalScale(new vec3(width, height, 1))
+    // Center the picture on the card root in WORLD space. The picture may sit
+    // under a scaled/offset anchor in the prefab; setting world position here
+    // neutralizes that anchor offset so the picture (and the caption hung below
+    // it) are centered on the card instead of drifting to one side.
+    pTrans.setWorldPosition(this.trans.getWorldPosition())
   }
 
   private imageAspect(): number {
@@ -406,35 +403,85 @@ export class PremadeCard extends BaseScriptComponent {
   }
 
   private scheduleMeasure(): void {
-    if (!this.autoFitBorder) return
-    if (this.lastContentVisible) this.beginMeasurePass()
-    else this.needsMeasure = true
-  }
-
-  private beginMeasurePass(): void {
     if (!this.autoFitBorder || !this.borderBubble) return
-    // Force content visible so the text lays out, then measure a few frames later.
-    this.applyContentVisibility(true)
+    // If the content is already visible (open card), it's laid out and measures
+    // live. If it's hidden (bubble), enable the caption invisibly so its bounds
+    // are valid without anything flashing. The picture never needs enabling: its
+    // size is computed from the image aspect.
+    if (!this.lastContentVisible && this.caption) this.caption.beginMeasure()
     this.measureCountdown = MEASURE_DELAY_FRAMES
   }
 
+  // Fits the border by taking the picture's true footprint (from its world
+  // scale, centered on the root) and unioning it with the invisibly-measured
+  // text rect placed a gap below. No content ever has to become visible.
   private remeasureBorder(): void {
     if (!this.autoFitBorder || !this.borderBubble || !this.trans) return
-    const textVisual = this.caption ? this.caption.getTextVisual() : null
-    const rootInv = this.trans.getInvertedWorldTransform()
-    const rect = measureLocalRect([this.pictureVisual, textVisual], rootInv, this.borderPadding)
-    if (!rect) return
+
+    const picture = this.pictureLocalSize()
+    const halfPW = picture.x * 0.5
+    const halfPH = picture.y * 0.5
+
+    let left = -halfPW
+    let right = halfPW
+    let top = halfPH
+    let bottom = -halfPH
+
+    const text = this.textLocalSize()
+    if (text.y > 0) {
+      const halfTW = text.x * 0.5
+      left = Math.min(left, -halfTW)
+      right = Math.max(right, halfTW)
+      // Text hangs a gap below the picture and grows downward.
+      bottom = -halfPH - this.captionGap() - text.y
+    }
+
+    const pad = this.borderPadding
+    const width = right - left + 2 * pad
+    const height = top - bottom + 2 * pad
+    const centerX = (left + right) * 0.5
+    const centerY = (top + bottom) * 0.5
 
     const borderTrans = this.borderBubble.getSceneObject().getTransform()
-    borderTrans.setLocalPosition(new vec3(rect.centerX, rect.centerY, -this.backOffset))
+    borderTrans.setLocalPosition(new vec3(centerX, centerY, -this.backOffset))
     borderTrans.setLocalRotation(quat.quatIdentity())
     borderTrans.setLocalScale(vec3.one())
 
-    this.borderBubble.setTargetSize(rect.width, rect.height)
+    this.borderBubble.setTargetSize(width, height)
     this.refreshBorderAtCurrentProgress()
-    this.measuredOnce = true
-    this.needsMeasure = false
-    this.logger.info("Fit border to " + rect.width.toFixed(1) + " x " + rect.height.toFixed(1) + " cm")
+    this.logger.info("Fit border to " + width.toFixed(1) + " x " + height.toFixed(1) + " cm")
+  }
+
+  // Picture footprint in the card root's local cm. Derived from the picture's
+  // actual world scale (which already includes any parent anchor scale, e.g. the
+  // prefab's x10 ImageAnchor) divided by the root scale, so the border wraps the
+  // truly-displayed picture rather than the raw imageWidth. The picture is a unit
+  // quad, so its world scale equals its world size.
+  private pictureLocalSize(): vec2 {
+    const fallback = this.imageWidth > 0 ? this.imageWidth : 1
+    if (!this.pictureVisual || !this.trans) return new vec2(fallback, fallback / this.imageAspect())
+    const pScale = this.pictureVisual.getSceneObject().getTransform().getWorldScale()
+    const rootScale = this.trans.getWorldScale()
+    const w = rootScale.x !== 0 ? pScale.x / rootScale.x : pScale.x
+    const h = rootScale.y !== 0 ? pScale.y / rootScale.y : pScale.y
+    return new vec2(w, h)
+  }
+
+  private captionGap(): number {
+    return this.caption ? this.caption.getGap() : 0
+  }
+
+  // Converts the caption's text bounds (text-local units) into the card root's
+  // local cm via the text's scale relative to the root. Returns (0,0) if absent.
+  private textLocalSize(): vec2 {
+    if (!this.caption) return vec2.zero()
+    const local = this.caption.getTextLocalSize()
+    if (local.x <= 0 || local.y <= 0) return vec2.zero()
+    const rootScale = this.trans.getWorldScale()
+    const textScale = this.caption.getTextWorldScale()
+    const fx = rootScale.x !== 0 ? textScale.x / rootScale.x : 1
+    const fy = rootScale.y !== 0 ? textScale.y / rootScale.y : 1
+    return new vec2(local.x * fx, local.y * fy)
   }
 
   // BubbleMesh skips per-frame work once settled on the full-morph rect, so a
