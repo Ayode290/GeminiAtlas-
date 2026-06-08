@@ -26,6 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    cardWaveSpawner: false
     cooldownSec: false
     debugMode: false
     enableLogging: false
@@ -51,6 +52,7 @@
     - notificationText: !<reference.Text> 00000000-0000-0000-0000-000000000000
       notificationMessage: Prayer detected
       pingController: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      cardWaveSpawner: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
       headObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       palmDistanceCm: !<float> 8.000000
       fingersUpPitchDeg: !<float> 30.000000
@@ -71,6 +73,7 @@
     - '// @input Component.Text notificationText {"hint":"Text component shown briefly when the prayer pose is detected"}'
     - '// @input string notificationMessage = "Prayer detected" {"hint":"Message displayed in the notification text"}'
     - '// @input AssignableType pingController {"hint":"Ping controller fired when the prayer pose is detected (optional)"}'
+    - '// @input AssignableType_1 cardWaveSpawner {"hint":"Card spawner fired alongside the ping; reveals location-filtered cards on the wavefront (optional)"}'
     - '// @input SceneObject headObject {"hint":"Scene object used as the ping origin (player head / camera)"}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Detection thresholds</span>"}'

@@ -76,7 +76,7 @@
   PrefabRemaps:
     []
   Name: PremadeCard
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 28.822433, z: -82.457962}
