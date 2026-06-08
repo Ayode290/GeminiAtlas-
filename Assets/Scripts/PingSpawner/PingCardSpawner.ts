@@ -68,6 +68,11 @@ export class PingCardSpawner extends BaseScriptComponent {
   @allowUndefined
   placeholderImages: Texture[]
 
+  @input
+  @hint("Optional: put spawned cards on THIS object's render layer (e.g. the camera or any visible content object). Leave empty to keep the PremadeCard prefab's own layer — required when this spawner sits on a World Mesh / non-rendered object, otherwise the cards inherit that hidden layer and never draw.")
+  @allowUndefined
+  renderLayerSource: SceneObject
+
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Selection</span>')
   @input
@@ -224,14 +229,22 @@ export class PingCardSpawner extends BaseScriptComponent {
     const parent = this.getSceneObject()
     const obj = this.cardPrefab.instantiate(parent)
     obj.name = "PingCard_" + entry.id
-    obj.layer = parent.layer
+    // The prefab is authored from a DISABLED scene instance, so instances spawn
+    // disabled. Force-enable on spawn so the card (and its PremadeCard lifecycle)
+    // actually runs and renders.
+    obj.enabled = true
+    // Keep the prefab's authored (camera-rendered) layer by default. Only force a
+    // layer when an explicit source is given. Inheriting the PARENT's layer breaks
+    // when the spawner lives on a World Mesh object whose layer the display camera
+    // does not draw as content (cards would spawn but stay invisible).
+    if (this.renderLayerSource) obj.layer = this.renderLayerSource.layer
 
     const trans = obj.getTransform()
     trans.setLocalPosition(localPos)
 
     const card = obj.getComponent(PremadeCard.getTypeName()) as unknown as PremadeCard
     if (card) {
-      this.dressCard(card, entry, index)
+      this.dressCard(obj, card, entry, index)
     } else {
       this.logger.warn("Spawned card " + entry.id + " has no PremadeCard component.")
     }
@@ -242,15 +255,30 @@ export class PingCardSpawner extends BaseScriptComponent {
 
   // Configures a freshly-instantiated card: a closed bubble that expands on gaze
   // and STAYS OPEN once expanded, billboarding to the camera, colored by topic.
-  private dressCard(card: PremadeCard, entry: CardDeckEntry, index: number): void {
+  private dressCard(obj: SceneObject, card: PremadeCard, entry: CardDeckEntry, index: number): void {
     card.billboard = true
     card.startExpanded = false
     card.gazeToExpand = true
     card.collapseWhenGazeLost = false // once opened, stays opened
     card.gazeDwell = this.gazeDwellSec
     card.gazeConeAngleDeg = this.gazeConeAngleDeg
-
     if (this.cameraObject) card.setCamera(this.cameraObject)
+
+    // Apply content now AND again next frame. The prefab is authored disabled, so
+    // its PremadeCard.onAwake (which resets currentImage/currentText to the prefab
+    // defaults) runs on enable — possibly AFTER this call. Re-applying once the
+    // lifecycle has settled guarantees the card shows this entry's image/text, not
+    // the prefab defaults. Content is hidden until gaze-expand, so there is no flash.
+    this.applyCardContent(card, entry, index)
+    const ev = this.createEvent("DelayedCallbackEvent")
+    ev.bind(() => {
+      if (this.spawnedObjects.indexOf(obj) < 0) return // cleared/destroyed meanwhile
+      this.applyCardContent(card, entry, index)
+    })
+    ev.reset(0)
+  }
+
+  private applyCardContent(card: PremadeCard, entry: CardDeckEntry, index: number): void {
     if (this.imageWidth > 0) card.setImageWidth(this.imageWidth)
     const tex = this.placeholderImageFor(index)
     if (tex) card.setImage(tex)

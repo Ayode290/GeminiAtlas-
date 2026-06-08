@@ -12,7 +12,6 @@
     - !<own> 026777c9-2a55-4715-b0df-6e70af6e279d
     - !<own> ca317462-cdcf-48c3-bec3-957345c57d06
     - !<own> 738ad89a-82c4-4718-85b1-3b99e9f41195
-    - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
     - !<own> cbc64de6-f36c-4d43-81ed-51724106378c
     - !<own> 88f81952-1481-4cec-af46-2c6672cb056a
     - !<own> df855af7-a6b5-4363-866f-c0bb6422fc98
@@ -20,6 +19,7 @@
     - !<own> 6ae221a8-a00c-49e5-b8ca-5412d07449ad
     - !<own> 7511d3e4-7670-4071-b569-467225cd4df0
     - !<own> cb4fbe84-dded-4fbc-8e0f-1b0d681d0d3d
+    - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       []
@@ -413,7 +413,6 @@
     gazeDwellSec: true
     gazeConeAngleDeg: true
     allowRespawn: true
-    enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
     {}
@@ -424,6 +423,7 @@
       pingController: !<MappingBased.AssignableType> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
       placeholderImages: !<reference.Texture[]>
         []
+      renderLayerSource: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       location: Seattle
       minDistance: !<float> 80.000000
       maxDistance: !<float> 220.000000
@@ -436,7 +436,7 @@
       gazeDwellSec: !<float> 1.000000
       gazeConeAngleDeg: !<float> 12.000000
       allowRespawn: false
-      enableLogging: false
+      enableLogging: true
       enableLoggingLifecycle: false
   ScriptTypes:
     "":
@@ -3112,7 +3112,7 @@
   PrefabRemaps:
     []
   Name: GlobeAndMap
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}

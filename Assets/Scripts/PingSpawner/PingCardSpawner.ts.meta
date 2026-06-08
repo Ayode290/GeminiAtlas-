@@ -41,6 +41,7 @@
     minDistance: false
     pingController: false
     placeholderImages: false
+    renderLayerSource: false
     revealOffsetSec: false
     revealPopDuration: false
     wavefrontSpeedOverride: false
@@ -58,6 +59,7 @@
       pingController: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
       placeholderImages: !<reference.Texture[]>
         []
+      renderLayerSource: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       location: Seattle
       minDistance: !<float> 80.000000
       maxDistance: !<float> 220.000000
@@ -83,6 +85,7 @@
     - '// @input SceneObject cameraObject {"hint":"Camera the cards billboard toward + use for gaze. Forwarded to each spawned card."}'
     - '// @input AssignableType pingController {"hint":"PingController whose pingSpeed times the reveals so cards appear with the visible wavefront. Optional — falls back to Wavefront Speed Override."}'
     - '// @input Asset.Texture[] placeholderImages {"hint":"Placeholder image textures, assigned to the spawned cards in order (cycled). Fill the real images in later."}'
+    - "// @input SceneObject renderLayerSource {\"hint\":\"Optional: put spawned cards on THIS object's render layer (e.g. the camera or any visible content object). Leave empty to keep the PremadeCard prefab's own layer — required when this spawner sits on a World Mesh / non-rendered object, otherwise the cards inherit that hidden layer and never draw.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Selection</span>"}'
     - '// @input string location = "Seattle" {"hint":"Only cards whose location matches this are spawned (case-insensitive). e.g. \"Seattle\" | \"Los Angeles\" | \"Tokyo\"."}'
