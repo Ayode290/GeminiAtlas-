@@ -12,11 +12,6 @@
     - !<own> 026777c9-2a55-4715-b0df-6e70af6e279d
     - !<own> ca317462-cdcf-48c3-bec3-957345c57d06
     - !<own> 738ad89a-82c4-4718-85b1-3b99e9f41195
-    - !<own> 5cb6ee5b-4854-423b-bf0e-7f3486d29f7a
-    - !<own> 580901eb-5721-44e1-9e89-9249bba7c292
-    - !<own> 5a002bfe-7ee4-4985-879c-df240824f398
-    - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
-    - !<own> c5be34f2-fd58-4bb9-b900-b610829dbfb4
     - !<own> cbc64de6-f36c-4d43-81ed-51724106378c
     - !<own> 88f81952-1481-4cec-af46-2c6672cb056a
     - !<own> df855af7-a6b5-4363-866f-c0bb6422fc98
@@ -24,6 +19,7 @@
     - !<own> 6ae221a8-a00c-49e5-b8ca-5412d07449ad
     - !<own> 7511d3e4-7670-4071-b569-467225cd4df0
     - !<own> cb4fbe84-dded-4fbc-8e0f-1b0d681d0d3d
+    - !<own> cfa122d8-0a42-44f7-9c9d-f10923115ab9
   layers: !<Layers/267ee9a7-aff2-4f9d-9a49-f71214747d03>
     userLayers:
       []
@@ -397,6 +393,54 @@
   MaxDistance: 100.000000
   EnableDirectivityEffect: false
   EnablePositionEffect: false
+- !<ScriptComponent/0508054e-2e96-4e10-ae65-e0301fc8323b>
+  PrefabRemaps:
+    []
+  Name: PingCardSpawner
+  Enabled: true
+  ScriptAsset: !<reference> 2602b5ac-a9ea-4f80-9564-d40bf59b8f13
+  ScriptInputsDefault:
+    placeholderImages: true
+    location: true
+    minDistance: true
+    maxDistance: true
+    floorHeight: true
+    ceilingHeight: true
+    wavefrontSpeedOverride: true
+    revealOffsetSec: true
+    revealPopDuration: true
+    imageWidth: true
+    gazeDwellSec: true
+    gazeConeAngleDeg: true
+    allowRespawn: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      cardPrefab: !<reference.ObjectPrefab> 02b4824a-47d6-4142-adfd-202c4493d953
+      cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      pingController: !<MappingBased.AssignableType> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
+      placeholderImages: !<reference.Texture[]>
+        []
+      renderLayerSource: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      location: Seattle
+      minDistance: !<float> 80.000000
+      maxDistance: !<float> 220.000000
+      floorHeight: !<float> -50.000000
+      ceilingHeight: !<float> 100.000000
+      wavefrontSpeedOverride: !<float> 0.000000
+      revealOffsetSec: !<float> 0.000000
+      revealPopDuration: 0.500000
+      imageWidth: !<float> 0.000000
+      gazeDwellSec: !<float> 1.000000
+      gazeConeAngleDeg: !<float> 12.000000
+      allowRespawn: false
+      enableLogging: true
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/05388fb0-0dde-44c7-a8c9-1f6a6bb35ced>
   PrefabRemaps:
     []
@@ -1707,7 +1751,7 @@
   PrefabRemaps:
     []
   Name: PictureController
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: -10.000000}
@@ -2246,21 +2290,6 @@
     - !<own> 7078bb10-d01f-4bc5-95f2-81084478f04d
   Components:
     - !<own> 3e3d8e2c-bd87-4ba3-b84f-4290d8bdeb22
-- !<SceneObject/5cb6ee5b-4854-423b-bf0e-7f3486d29f7a>
-  PrefabRemaps:
-    []
-  Name: PrayerGestureController
-  Enabled: true
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> 64db9a09-4d60-463b-bd33-8154fcd4d3b3
 - !<SceneObject/5d5dc618-ccfb-4fd9-a7d8-3e4fce2f9d5c>
   PrefabRemaps:
     []
@@ -2336,42 +2365,6 @@
     []
   Components:
     - !<own> 8a69c5c7-81f7-41d1-821f-84e5b5129198
-- !<ScriptComponent/64db9a09-4d60-463b-bd33-8154fcd4d3b3>
-  PrefabRemaps:
-    []
-  Name: PrayerGestureBehavior
-  Enabled: true
-  ScriptAsset: !<reference> be741c00-2573-4869-8ab8-f83e81613778
-  ScriptInputsDefault:
-    notificationMessage: true
-    palmDistanceCm: true
-    fingersUpPitchDeg: true
-    holdFrames: true
-    cooldownSec: true
-    notificationDurationSec: true
-    debugMode: true
-    enableLogging: true
-    enableLoggingLifecycle: true
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      notificationText: !<reference.Text> ba3928e4-2cc8-4e2b-80af-d269989cb1b9
-      notificationMessage: Prayer detected
-      pingController: !<MappingBased.AssignableType> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
-      headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
-      palmDistanceCm: !<float> 8.000000
-      fingersUpPitchDeg: !<float> 30.000000
-      palmsFacingDot: 0.500000
-      holdFrames: !<float> 3.000000
-      cooldownSec: !<float> 2.000000
-      notificationDurationSec: 2.500000
-      debugMode: false
-      enableLogging: false
-      enableLoggingLifecycle: false
-  ScriptTypes:
-    "":
-      {}
 - !<SceneObject/6585b7e7-08fc-42a2-8b20-e75cc85a8d81>
   PrefabRemaps:
     []
@@ -2637,7 +2630,7 @@
   PrefabRemaps:
     []
   Name: TopicPanel
-  Enabled: false
+  Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -4692,7 +4685,7 @@
 - !<SceneObject/cbc64de6-f36c-4d43-81ed-51724106378c>
   PrefabRemaps:
     []
-  Name: BubbleField
+  Name: (Unused)BubbleField
   Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
@@ -4728,6 +4721,8 @@
   ScriptAsset: !<reference> a3038d54-99fd-486f-93be-8b43c7fb1c10
   ScriptInputsDefault:
     color: true
+    topicRevealSeconds: true
+    revealParam: true
     cornerRadius: true
     rectLineWidth: true
     fillOpacity: true
@@ -4737,8 +4732,11 @@
     {}
   ScriptInputs:
     "":
-      baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
+      baseMaterial: !<reference.Material> be7c4139-e488-48bb-9764-af76fdcc5c27
       color: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+      rainbowFlowSpeed: 0.150000
+      topicRevealSeconds: 0.800000
+      revealParam: reveal
       padding: !<float> 1.000000
       cornerRadius: !<float> 2.000000
       rectLineWidth: 0.400000
@@ -4753,7 +4751,7 @@
 - !<SceneObject/cfa122d8-0a42-44f7-9c9d-f10923115ab9>
   PrefabRemaps:
     []
-  Name: PingController
+  Name: ExplorationController
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
@@ -4762,9 +4760,13 @@
     Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
     HasSegmentScaleCompensation: false
   Children:
-    []
+    - !<own> 580901eb-5721-44e1-9e89-9249bba7c292
+    - !<own> 5a002bfe-7ee4-4985-879c-df240824f398
+    - !<own> c5be34f2-fd58-4bb9-b900-b610829dbfb4
   Components:
+    - !<own> e23fbc99-592e-4240-999f-80b77b24e35f
     - !<own> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
+    - !<own> 0508054e-2e96-4e10-ae65-e0301fc8323b
 - !<SceneObject/d4e4bf56-fa5e-4e5f-a300-f3d93779c106>
   PrefabRemaps:
     []
@@ -5163,6 +5165,43 @@
     - !<own> ffa580d3-78da-43f4-b7a5-e2f0b7e8c1b3
   Components:
     []
+- !<ScriptComponent/e23fbc99-592e-4240-999f-80b77b24e35f>
+  PrefabRemaps:
+    []
+  Name: PrayerGestureBehavior
+  Enabled: true
+  ScriptAsset: !<reference> be741c00-2573-4869-8ab8-f83e81613778
+  ScriptInputsDefault:
+    notificationMessage: true
+    palmDistanceCm: true
+    fingersUpPitchDeg: true
+    holdFrames: true
+    cooldownSec: true
+    notificationDurationSec: true
+    debugMode: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      notificationText: !<reference.Text> ba3928e4-2cc8-4e2b-80af-d269989cb1b9
+      notificationMessage: Prayer detected
+      pingController: !<MappingBased.AssignableType> a038f5d3-c2e8-4d9a-ba30-0adfffbf5742
+      cardWaveSpawner: !<MappingBased.AssignableType_1> 0508054e-2e96-4e10-ae65-e0301fc8323b
+      headObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      palmDistanceCm: !<float> 8.000000
+      fingersUpPitchDeg: !<float> 30.000000
+      palmsFacingDot: 0.500000
+      holdFrames: !<float> 3.000000
+      cooldownSec: !<float> 2.000000
+      notificationDurationSec: 2.500000
+      debugMode: false
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/e2c2d8f1-a6eb-4708-acdb-6a72768edad9>
   PrefabRemaps:
     []

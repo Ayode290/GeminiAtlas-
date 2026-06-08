@@ -1,0 +1,114 @@
+- !<AssetImportMetadata/5c58f8f9-a289-476c-815d-88dad1869b28>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 2602b5ac-a9ea-4f80-9564-d40bf59b8f13
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 2602b5ac-a9ea-4f80-9564-d40bf59b8f13
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 8f22ea37-75d0-4ecf-a57c-015616543aea
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/8f22ea37-75d0-4ecf-a57c-015616543aea>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: f7e62920-5190-4100-b19e-1e63f7ca63b8
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    allowRespawn: false
+    cameraObject: false
+    cardPrefab: false
+    ceilingHeight: false
+    enableLogging: false
+    enableLoggingLifecycle: false
+    floorHeight: false
+    gazeConeAngleDeg: false
+    gazeDwellSec: false
+    imageWidth: false
+    location: false
+    maxDistance: false
+    minDistance: false
+    pingController: false
+    placeholderImages: false
+    renderLayerSource: false
+    revealOffsetSec: false
+    revealPopDuration: false
+    wavefrontSpeedOverride: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cardPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      cameraObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      pingController: !<MappingBased.AssignableType> 00000000-0000-0000-0000-000000000000
+      placeholderImages: !<reference.Texture[]>
+        []
+      renderLayerSource: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      location: Seattle
+      minDistance: !<float> 80.000000
+      maxDistance: !<float> 220.000000
+      floorHeight: !<float> -50.000000
+      ceilingHeight: !<float> 100.000000
+      wavefrontSpeedOverride: !<float> 0.000000
+      revealOffsetSec: !<float> 0.000000
+      revealPopDuration: 0.500000
+      imageWidth: !<float> 0.000000
+      gazeDwellSec: !<float> 1.000000
+      gazeConeAngleDeg: !<float> 12.000000
+      allowRespawn: false
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">PingCardSpawner – reveals location-filtered cards on the ping wavefront</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Call spawnWave(origin) (e.g. from PrayerGestureBehavior). Filters cardDeckData by Location, scatters PremadeCard bubbles in a cylinder, and pops each one when the wavefront reaches it.</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Asset.ObjectPrefab cardPrefab {"hint":"The PremadeCard prefab, instantiated once per matching card as a child of this object."}'
+    - '// @input SceneObject cameraObject {"hint":"Camera the cards billboard toward + use for gaze. Forwarded to each spawned card."}'
+    - '// @input AssignableType pingController {"hint":"PingController whose pingSpeed times the reveals so cards appear with the visible wavefront. Optional — falls back to Wavefront Speed Override."}'
+    - '// @input Asset.Texture[] placeholderImages {"hint":"Placeholder image textures, assigned to the spawned cards in order (cycled). Fill the real images in later."}'
+    - "// @input SceneObject renderLayerSource {\"hint\":\"Optional: put spawned cards on THIS object's render layer (e.g. the camera or any visible content object). Leave empty to keep the PremadeCard prefab's own layer — required when this spawner sits on a World Mesh / non-rendered object, otherwise the cards inherit that hidden layer and never draw.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Selection</span>"}'
+    - '// @input string location = "Seattle" {"hint":"Only cards whose location matches this are spawned (case-insensitive). e.g. \"Seattle\" | \"Los Angeles\" | \"Tokyo\"."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Spawn area (cylindrical pipe around this object)</span>"}'
+    - "// @input float minDistance = 80 {\"hint\":\"Minimum horizontal distance (cm) from this object a card can spawn — the pipe's inner wall.\"}"
+    - "// @input float maxDistance = 220 {\"hint\":\"Maximum horizontal distance (cm) from this object a card can spawn — the pipe's outer wall.\"}"
+    - '// @input float floorHeight = -50 {"hint":"Floor height (cm, local Y) — the bottom of the spawn pipe. May be negative (below the origin)."}'
+    - '// @input float ceilingHeight = 100 {"hint":"Ceiling height (cm, local Y) — the top of the spawn pipe."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Wavefront timing</span>"}'
+    - '// @input float wavefrontSpeedOverride {"hint":"Override the wavefront speed (cm/s). 0 = read pingSpeed from the linked PingController (recommended so reveals match the visible ping)."}'
+    - '// @input float revealOffsetSec {"hint":"Extra seconds added to every reveal time. Nudge to fine-tune cards popping right ON the band vs slightly behind it."}'
+    - "// @input float revealPopDuration = 0.5 {\"hint\":\"Seconds of the bubble's pop-in scale animation when it is revealed.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Card behaviour</span>"}'
+    - "// @input float imageWidth {\"hint\":\"Displayed image width (cm) for each card; height follows the image aspect. 0 = keep the prefab's authored width.\"}"
+    - '// @input float gazeDwellSec = 1 {"hint":"Seconds the player must gaze at a bubble before it expands into a card."}'
+    - "// @input float gazeConeAngleDeg = 12 {\"hint\":\"Half-angle (degrees) of the gaze cone that counts as 'looking at' a bubble.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Behaviour</span>"}'
+    - '// @input bool allowRespawn {"hint":"Allow a later wave to clear the previous cards and spawn again. Off = the first wave wins and later calls are ignored."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

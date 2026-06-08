@@ -12,6 +12,7 @@ import animate, { CancelSet } from "SpectaclesInteractionKit.lspkg/Utils/animate
 import { SIK } from "SpectaclesInteractionKit.lspkg/SIK"
 import TrackedHand from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/TrackedHand"
 import { PingController } from "./PingController"
+import { PingCardSpawner } from "./PingSpawner/PingCardSpawner"
 
 // Snapshot of every metric evaluated for the prayer pose on a given frame.
 type PoseStatus = {
@@ -46,6 +47,11 @@ export class PrayerGestureBehavior extends BaseScriptComponent {
   @hint("Ping controller fired when the prayer pose is detected (optional)")
   @allowUndefined
   pingController: PingController
+
+  @input
+  @hint("Card spawner fired alongside the ping; reveals location-filtered cards on the wavefront (optional)")
+  @allowUndefined
+  cardWaveSpawner: PingCardSpawner
 
   @input
   @hint("Scene object used as the ping origin (player head / camera)")
@@ -246,6 +252,7 @@ export class PrayerGestureBehavior extends BaseScriptComponent {
     (global as any).worldDiscovered = true
     this.logger.info("Prayer gesture detected")
     this.emitPing()
+    this.spawnCardWave()
     // In debug mode the status readout already reflects detection; don't
     // overwrite it with the auto-hiding notification.
     if (!this.debugMode) {
@@ -261,6 +268,17 @@ export class PrayerGestureBehavior extends BaseScriptComponent {
     }
     const headPos = this.headObject.getTransform().getWorldPosition()
     this.pingController.emitBurst(headPos)
+  }
+
+  // Reveals the location-filtered cards on the ping wavefront, sharing the ping's
+  // head origin so the cards pop in step with the visible scan. Safe to call when
+  // the spawner or head reference is unassigned.
+  private spawnCardWave(): void {
+    if (!this.cardWaveSpawner || !this.headObject) {
+      return
+    }
+    const headPos = this.headObject.getTransform().getWorldPosition()
+    this.cardWaveSpawner.spawnWave(headPos)
   }
 
   private showNotification(): void {
