@@ -2666,7 +2666,8 @@
     - !<own> f527e3f3-060b-465b-900d-e93fe3d4a6c5
 - !<SceneObject/7511d3e4-7670-4071-b569-467225cd4df0>
   PrefabRemaps:
-    []
+    - 7511d3e4-7670-4071-b569-467225cd4df0: b6928226-2445-41f0-7792-1e599b88ad11
+    - 7de2bdf7-a45f-4832-9337-4eb00337525d: aaffa39a-4028-4c1a-6d00-1d52016f90dc
   Name: CardStore
   Enabled: true
   Layers: 1
@@ -4590,7 +4591,8 @@
     []
 - !<SceneObject/cb4fbe84-dded-4fbc-8e0f-1b0d681d0d3d>
   PrefabRemaps:
-    []
+    - c99be548-d91a-4909-b4fb-8e0e02d53858: e7b52a9e-f5dd-4015-786f-9f4d78525ba9
+    - cb4fbe84-dded-4fbc-8e0f-1b0d681d0d3d: 37eb8dc0-9362-4ca2-4e2a-a83fe339d69d
   Name: CardDeck
   Enabled: true
   Layers: 1

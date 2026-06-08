@@ -1,0 +1,109 @@
+- !<ObjectPrefab/db88fcb4-cb89-45f3-bb12-8e6f676330fd>
+  PackagePath: ""
+  objects:
+    - !<own> 37eb8dc0-9362-4ca2-b1d5-57c01cc62962
+  LazyLoading: false
+  RetainAssets: true
+- !<SceneObject/37eb8dc0-9362-4ca2-b1d5-57c01cc62962>
+  PrefabRemaps:
+    - 37eb8dc0-9362-4ca2-b1d5-57c01cc62962: 37eb8dc0-9362-4ca2-4e2a-a83fe339d69d
+    - e7b52a9e-f5dd-4015-8790-60b287ada456: e7b52a9e-f5dd-4015-786f-9f4d78525ba9
+  Name: CardDeck
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> e7b52a9e-f5dd-4015-8790-60b287ada456
+- !<ScriptComponent/e7b52a9e-f5dd-4015-8790-60b287ada456>
+  PrefabRemaps:
+    []
+  Name: CardDeckController
+  Enabled: true
+  ScriptAsset: !<reference> 6c013ed9-5070-426e-96d9-7da4cc246ac0
+  ScriptInputsDefault:
+    placeholderImages: true
+    centerObject: true
+    cardDistanceCm: true
+    cardSizeBase: true
+    topicWeight: true
+    locationWeight: true
+    dateWeight: true
+    dateRangeDays: true
+    swayAmplitudeCm: true
+    swayFreqMin: true
+    swayFreqMax: true
+    searchSpinMultiplier: true
+    resultRowDepthCm: true
+    resultRowRiseCm: true
+    resultCardSize: true
+    coverCenterGapCm: true
+    coverSideSpacingCm: true
+    coverDepthStepCm: true
+    coverFoldStartDeg: true
+    coverFoldStepDeg: true
+    coverMaxFoldDeg: true
+    coverSideScaleFalloff: true
+    coverMinScaleFrac: true
+    coverMaxVisiblePerSide: true
+    coverScrubStepCm: true
+    coverSnapRate: true
+    coverFlickThreshold: true
+    coverInvertScrub: true
+    coverInvertFold: true
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      cardPrefab: !<reference.ObjectPrefab> 02b4824a-47d6-4142-adfd-202c4493d953
+      placeholderImages: !<reference.Texture[]>
+        []
+      cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      globeView: !<MappingBased.AssignableType> 1537e6de-5cfe-42ea-873c-8c8719a6f4a4
+      centerObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      cardDistanceCm: !<float> 0.000000
+      verticalCenterRiseCm: !<float> 20.000000
+      canvasHeightCm: !<float> 20.000000
+      cardGapCm: !<float> 0.000000
+      cardSizeBase: 0.300000
+      cardSizeMinScale: 0.300000
+      cardSizeMaxScale: !<float> 1.000000
+      cardWidthCm: !<float> 10.000000
+      cardHeightCm: !<float> 15.000000
+      topicWeight: 0.700000
+      locationWeight: 0.200000
+      dateWeight: 0.100000
+      dateRangeDays: !<float> 120.000000
+      swayAmplitudeCm: 1.200000
+      swayFreqMin: 0.300000
+      swayFreqMax: 0.700000
+      searchSpinMultiplier: 3.500000
+      resultRowDepthCm: !<float> 45.000000
+      resultRowRiseCm: !<float> 0.000000
+      resultCardSize: 0.500000
+      coverCenterGapCm: !<float> 14.000000
+      coverSideSpacingCm: !<float> 6.000000
+      coverDepthStepCm: !<float> 6.000000
+      coverFoldStartDeg: !<float> 45.000000
+      coverFoldStepDeg: !<float> 12.000000
+      coverMaxFoldDeg: !<float> 75.000000
+      coverSideScaleFalloff: 0.820000
+      coverMinScaleFrac: 0.400000
+      coverMaxVisiblePerSide: !<float> 6.000000
+      coverScrubStepCm: !<float> 12.000000
+      coverSnapRate: !<float> 12.000000
+      coverFlickThreshold: !<float> 25.000000
+      coverInvertScrub: false
+      coverInvertFold: false
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}

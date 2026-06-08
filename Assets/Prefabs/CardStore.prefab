@@ -1,0 +1,40 @@
+- !<ObjectPrefab/919a02b3-17a5-4db5-8fa7-faf2c34364e3>
+  PackagePath: ""
+  objects:
+    - !<own> b6928226-2445-41f0-886d-e1a6647752ee
+  LazyLoading: false
+  RetainAssets: true
+- !<ScriptComponent/aaffa39a-4028-4c1a-92ff-e2adfe906f23>
+  PrefabRemaps:
+    []
+  Name: CardStore
+  Enabled: true
+  ScriptAsset: !<reference> 54f83df6-78f1-4b84-8e01-ea949375fab2
+  ScriptInputsDefault:
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
+- !<SceneObject/b6928226-2445-41f0-886d-e1a6647752ee>
+  PrefabRemaps:
+    - aaffa39a-4028-4c1a-92ff-e2adfe906f23: aaffa39a-4028-4c1a-6d00-1d52016f90dc
+    - b6928226-2445-41f0-886d-e1a6647752ee: b6928226-2445-41f0-7792-1e599b88ad11
+  Name: CardStore
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> aaffa39a-4028-4c1a-92ff-e2adfe906f23
