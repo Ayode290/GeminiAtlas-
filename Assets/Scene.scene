@@ -4503,6 +4503,8 @@
     coverMinScaleFrac: true
     coverMaxVisiblePerSide: true
     coverScrubStepCm: true
+    coverSnapRate: true
+    coverFlickThreshold: true
     coverInvertScrub: true
     coverInvertFold: true
     enableLogging: true
@@ -4547,6 +4549,8 @@
       coverMinScaleFrac: 0.400000
       coverMaxVisiblePerSide: !<float> 6.000000
       coverScrubStepCm: !<float> 12.000000
+      coverSnapRate: !<float> 12.000000
+      coverFlickThreshold: !<float> 25.000000
       coverInvertScrub: false
       coverInvertFold: false
       enableLogging: false
