@@ -67,6 +67,10 @@ export class CardStore extends BaseScriptComponent {
   // Monotonic counter for generated ids.
   private idCounter: number = 0
 
+  // Observers notified when a card is CAPTURED this session (addCard). Premade
+  // seeding (addPremade) does NOT notify. Reassigned, never mutated in place.
+  private captureListeners: ((card: CardRecord) => void)[] = []
+
   onAwake() {
     this.logger = new Logger("CardStore", this.enableLogging || this.enableLoggingLifecycle, true);
     if (this.enableLoggingLifecycle) this.logger.debug("LIFECYCLE: onAwake()");
@@ -81,7 +85,30 @@ export class CardStore extends BaseScriptComponent {
     const record = this.finalize(input, false)
     this.cards.push(record)
     this.logger.info("Captured card " + record.id + " @ " + record.location + " (" + this.cards.length + " total)")
+    this.notifyCaptured(record)
     return record
+  }
+
+  /**
+   * Registers a callback invoked AFTER each card is captured this session
+   * (addCard), with the stored record. Used by the CardDeckController to fold a
+   * freshly captured card into the deck (and re-shuffle) while it is being viewed.
+   * Premade seeding never fires this.
+   */
+  onCardAdded(callback: (card: CardRecord) => void): void {
+    if (typeof callback !== "function") return
+    this.captureListeners = [...this.captureListeners, callback]
+  }
+
+  private notifyCaptured(record: CardRecord): void {
+    for (const cb of this.captureListeners) {
+      try {
+        cb(record)
+      } catch (e) {
+        // A misbehaving listener must never break card storage.
+        this.logger.warn("onCardAdded listener threw: " + e)
+      }
+    }
   }
 
   /**
