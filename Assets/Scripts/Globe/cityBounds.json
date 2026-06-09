@@ -15,35 +15,35 @@
   "transition": {
     "_note": "SINGLE SOURCE OF TRUTH for the wide 'L-1' capture used ONLY to span-match the globe during the globe<->table handoff (it is NOT a navigable level; docking still lands at L0). For each city the tool captures a square covering spanMultiple x that city's L0 spanDeg, centered on L0, at outSize, and writes <city>_L-1.png. Change spanMultiple here (one place) to rescale every city's L-1.",
     "spanMultiple": 10,
-    "outSize": 2048,
+    "outSize": 3072,
     "labelSuffix": "region"
   },
   "cities": [
     {
       "name": "Tokyo",
-      "centerLatLng": { "lat": 35.6762, "lng": 139.6503 },
+      "centerLatLng": { "lat": 35.679921569965856, "lng": 139.7708038167485 },
       "levels": [
-        { "level": 0, "centerLatLng": { "lat": 35.6762, "lng": 139.6503 }, "spanDeg": 0.45, "outSize": 1024, "label": "Tokyo" },
-        { "level": 1, "centerLatLng": { "lat": 35.6762, "lng": 139.6503 }, "spanDeg": 0.14, "outSize": 1024, "label": "Tokyo \u00b7 closer" },
-        { "level": 2, "centerLatLng": { "lat": 35.6762, "lng": 139.6503 }, "spanDeg": 0.045, "outSize": 1024, "label": "Tokyo \u00b7 streets" }
+        { "level": 0, "centerLatLng": { "lat": 35.679921569965856, "lng": 139.7708038167485 }, "spanDeg": 0.45, "outSize": 1536, "label": "Tokyo" },
+        { "level": 1, "centerLatLng": { "lat": 35.679921569965856, "lng": 139.7708038167485 }, "spanDeg": 0.14, "outSize": 1536, "label": "Tokyo \u00b7 closer" },
+        { "level": 2, "centerLatLng": { "lat": 35.679921569965856, "lng": 139.7708038167485 }, "spanDeg": 0.045, "outSize": 1536, "label": "Tokyo \u00b7 streets" }
       ]
     },
     {
       "name": "Seattle",
       "centerLatLng": { "lat": 47.6062, "lng": -122.3321 },
       "levels": [
-        { "level": 0, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.45, "outSize": 1024, "label": "Seattle" },
-        { "level": 1, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.14, "outSize": 1024, "label": "Seattle \u00b7 closer" },
-        { "level": 2, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.045, "outSize": 1024, "label": "Seattle \u00b7 streets" }
+        { "level": 0, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.45, "outSize": 1536, "label": "Seattle" },
+        { "level": 1, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.14, "outSize": 1536, "label": "Seattle \u00b7 closer" },
+        { "level": 2, "centerLatLng": { "lat": 47.6062, "lng": -122.3321 }, "spanDeg": 0.045, "outSize": 1536, "label": "Seattle \u00b7 streets" }
       ]
     },
     {
       "name": "Los Angeles",
-      "centerLatLng": { "lat": 34.0522, "lng": -118.2437 },
+      "centerLatLng": { "lat": 33.764523, "lng": -118.190466 },
       "levels": [
-        { "level": 0, "centerLatLng": { "lat": 34.0522, "lng": -118.2437 }, "spanDeg": 0.45, "outSize": 1024, "label": "Los Angeles" },
-        { "level": 1, "centerLatLng": { "lat": 34.0522, "lng": -118.2437 }, "spanDeg": 0.14, "outSize": 1024, "label": "Los Angeles \u00b7 closer" },
-        { "level": 2, "centerLatLng": { "lat": 34.0522, "lng": -118.2437 }, "spanDeg": 0.045, "outSize": 1024, "label": "Los Angeles \u00b7 streets" }
+        { "level": 0, "centerLatLng": { "lat": 33.764523, "lng": -118.190466 }, "spanDeg": 0.45, "outSize": 1536, "label": "Los Angeles" },
+        { "level": 1, "centerLatLng": { "lat": 33.764523, "lng": -118.190466 }, "spanDeg": 0.14, "outSize": 1536, "label": "Los Angeles \u00b7 closer" },
+        { "level": 2, "centerLatLng": { "lat": 33.764523, "lng": -118.190466 }, "spanDeg": 0.045, "outSize": 1536, "label": "Los Angeles \u00b7 streets" }
       ]
     }
   ]

@@ -31,6 +31,11 @@ Usage
     #   --only Tokyo            limit to one city
     #   --dry-run               print the tile plan without fetching
     #   --no-regen-ts           skip rewriting cityBounds.ts
+    #   --res-scale 1.5         multiply every entry's outSize (capture AND the
+    #                           regenerated cityBounds.ts) by this factor. The
+    #                           crop is unchanged (same angle/bounds), only the
+    #                           pixel resolution scales. Default 1.0 = use the
+    #                           outSize values exactly as written in the JSON.
 """
 
 import argparse
@@ -61,6 +66,16 @@ MIN_DELAY_SEC = 1.5
 MAX_DELAY_SEC = 4.0
 MAX_RETRIES = 5
 USE_CACHE = True
+
+# Optional uniform multiplier on every entry's outSize. The crop bounds (angle
+# covered) are untouched; only the baked pixel resolution scales. Applied to BOTH
+# the capture AND the outSize mirrored into cityBounds.ts, so the two never drift.
+RES_SCALE = 1.0
+
+
+def effective_out_size(raw):
+    """The actual baked pixel size for a declared outSize, after RES_SCALE."""
+    return max(1, int(round(int(raw) * RES_SCALE)))
 
 
 # --- Web-Mercator slippy-tile math (offline only) ---------------------------
@@ -203,7 +218,7 @@ def fetch_tile(session, provider, z, x, y):
 
 def build_entry_texture(session, provider, entry, out_path, dry_run):
     bbox = bbox_from_entry(entry)
-    out_size = int(entry.get("outSize", 1024))
+    out_size = effective_out_size(entry.get("outSize", 1024))
     z = choose_zoom(bbox, out_size)
     x0, y0, x1, y1 = tile_range(bbox, z)
     n_tiles = (x1 - x0 + 1) * (y1 - y0 + 1)
@@ -335,7 +350,7 @@ def regenerate_ts(data):
             tp = texture_path_for(city["name"], lv["level"])
             lines.append(
                 f'      {{ level: {lv["level"]}, centerLatLng: {latlng(lv["centerLatLng"])}, '
-                f'spanDeg: {lv["spanDeg"]}, outSize: {lv["outSize"]}, '
+                f'spanDeg: {lv["spanDeg"]}, outSize: {effective_out_size(lv["outSize"])}, '
                 f'label: "{lv["label"]}", texturePath: "{tp}" }},'
             )
         lines.append("    ],")
@@ -344,7 +359,7 @@ def regenerate_ts(data):
             tp = texture_path_for(city["name"], tlv["level"])
             lines.append(
                 f'    transition: {{ level: {tlv["level"]}, centerLatLng: {latlng(tlv["centerLatLng"])}, '
-                f'spanDeg: {tlv["spanDeg"]}, outSize: {tlv["outSize"]}, '
+                f'spanDeg: {tlv["spanDeg"]}, outSize: {effective_out_size(tlv["outSize"])}, '
                 f'label: "{tlv["label"]}", texturePath: "{tp}" }},'
             )
         lines.append("  },")
@@ -359,7 +374,7 @@ def regenerate_ts(data):
 # --- main -------------------------------------------------------------------
 
 def main():
-    global MIN_DELAY_SEC, MAX_DELAY_SEC, USE_CACHE
+    global MIN_DELAY_SEC, MAX_DELAY_SEC, USE_CACHE, RES_SCALE
 
     parser = argparse.ArgumentParser(description="Generate baked map LOD textures from cityBounds.json")
     parser.add_argument("--only", help="Limit to a single city name (e.g. Tokyo)")
@@ -367,6 +382,10 @@ def main():
                         help="Capture ONLY the wide L-1 handoff texture(s), skipping L0..Ln")
     parser.add_argument("--dry-run", action="store_true", help="Print the tile plan without fetching")
     parser.add_argument("--no-regen-ts", action="store_true", help="Skip rewriting cityBounds.ts")
+    parser.add_argument("--res-scale", type=float, default=RES_SCALE,
+                        help="Multiply every entry's outSize (capture AND the regenerated "
+                             "cityBounds.ts) by this factor; same angle/bounds, higher pixel "
+                             f"resolution (default {RES_SCALE})")
     parser.add_argument("--min-delay", type=float, default=MIN_DELAY_SEC,
                         help=f"Min seconds between network requests (default {MIN_DELAY_SEC})")
     parser.add_argument("--max-delay", type=float, default=MAX_DELAY_SEC,
@@ -378,6 +397,9 @@ def main():
     MIN_DELAY_SEC = max(0.0, args.min_delay)
     MAX_DELAY_SEC = max(MIN_DELAY_SEC, args.max_delay)
     USE_CACHE = not args.no_cache
+    RES_SCALE = max(0.01, args.res_scale)
+    if abs(RES_SCALE - 1.0) > 1e-9:
+        print(f"Resolution scale: x{RES_SCALE:g} (outSize multiplied for capture and cityBounds.ts)")
 
     with open(BOUNDS_JSON, "r", encoding="utf-8") as f:
         data = json.load(f)

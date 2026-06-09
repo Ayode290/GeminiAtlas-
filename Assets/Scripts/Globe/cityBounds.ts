@@ -51,32 +51,32 @@ export const TILE_PROVIDER = {
 export const CITY_BOUNDS: CityBoundsEntry[] = [
   {
     name: "Tokyo",
-    centerLatLng: { lat: 35.6762, lng: 139.6503 },
+    centerLatLng: { lat: 35.679921569965856, lng: 139.7708038167485 },
     levels: [
-      { level: 0, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 0.45, outSize: 1024, label: "Tokyo", texturePath: "Assets/Textures/Globe/Tokyo_L0.png" },
-      { level: 1, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 0.14, outSize: 1024, label: "Tokyo · closer", texturePath: "Assets/Textures/Globe/Tokyo_L1.png" },
-      { level: 2, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 0.045, outSize: 1024, label: "Tokyo · streets", texturePath: "Assets/Textures/Globe/Tokyo_L2.png" },
+      { level: 0, centerLatLng: { lat: 35.679921569965856, lng: 139.7708038167485 }, spanDeg: 0.45, outSize: 1536, label: "Tokyo", texturePath: "Assets/Textures/Globe/Tokyo_L0.png" },
+      { level: 1, centerLatLng: { lat: 35.679921569965856, lng: 139.7708038167485 }, spanDeg: 0.14, outSize: 1536, label: "Tokyo · closer", texturePath: "Assets/Textures/Globe/Tokyo_L1.png" },
+      { level: 2, centerLatLng: { lat: 35.679921569965856, lng: 139.7708038167485 }, spanDeg: 0.045, outSize: 1536, label: "Tokyo · streets", texturePath: "Assets/Textures/Globe/Tokyo_L2.png" },
     ],
-    transition: { level: -1, centerLatLng: { lat: 35.6762, lng: 139.6503 }, spanDeg: 4.5, outSize: 2048, label: "Tokyo region", texturePath: "Assets/Textures/Globe/Tokyo_L-1.png" },
+    transition: { level: -1, centerLatLng: { lat: 35.679921569965856, lng: 139.7708038167485 }, spanDeg: 4.5, outSize: 3072, label: "Tokyo region", texturePath: "Assets/Textures/Globe/Tokyo_L-1.png" },
   },
   {
     name: "Seattle",
     centerLatLng: { lat: 47.6062, lng: -122.3321 },
     levels: [
-      { level: 0, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.45, outSize: 1024, label: "Seattle", texturePath: "Assets/Textures/Globe/Seattle_L0.png" },
-      { level: 1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.14, outSize: 1024, label: "Seattle · closer", texturePath: "Assets/Textures/Globe/Seattle_L1.png" },
-      { level: 2, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.045, outSize: 1024, label: "Seattle · streets", texturePath: "Assets/Textures/Globe/Seattle_L2.png" },
+      { level: 0, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.45, outSize: 1536, label: "Seattle", texturePath: "Assets/Textures/Globe/Seattle_L0.png" },
+      { level: 1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.14, outSize: 1536, label: "Seattle · closer", texturePath: "Assets/Textures/Globe/Seattle_L1.png" },
+      { level: 2, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 0.045, outSize: 1536, label: "Seattle · streets", texturePath: "Assets/Textures/Globe/Seattle_L2.png" },
     ],
-    transition: { level: -1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 4.5, outSize: 2048, label: "Seattle region", texturePath: "Assets/Textures/Globe/Seattle_L-1.png" },
+    transition: { level: -1, centerLatLng: { lat: 47.6062, lng: -122.3321 }, spanDeg: 4.5, outSize: 3072, label: "Seattle region", texturePath: "Assets/Textures/Globe/Seattle_L-1.png" },
   },
   {
     name: "Los Angeles",
-    centerLatLng: { lat: 34.0522, lng: -118.2437 },
+    centerLatLng: { lat: 33.764523, lng: -118.190466 },
     levels: [
-      { level: 0, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 0.45, outSize: 1024, label: "Los Angeles", texturePath: "Assets/Textures/Globe/Los Angeles_L0.png" },
-      { level: 1, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 0.14, outSize: 1024, label: "Los Angeles · closer", texturePath: "Assets/Textures/Globe/Los Angeles_L1.png" },
-      { level: 2, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 0.045, outSize: 1024, label: "Los Angeles · streets", texturePath: "Assets/Textures/Globe/Los Angeles_L2.png" },
+      { level: 0, centerLatLng: { lat: 33.764523, lng: -118.190466 }, spanDeg: 0.45, outSize: 1536, label: "Los Angeles", texturePath: "Assets/Textures/Globe/Los Angeles_L0.png" },
+      { level: 1, centerLatLng: { lat: 33.764523, lng: -118.190466 }, spanDeg: 0.14, outSize: 1536, label: "Los Angeles · closer", texturePath: "Assets/Textures/Globe/Los Angeles_L1.png" },
+      { level: 2, centerLatLng: { lat: 33.764523, lng: -118.190466 }, spanDeg: 0.045, outSize: 1536, label: "Los Angeles · streets", texturePath: "Assets/Textures/Globe/Los Angeles_L2.png" },
     ],
-    transition: { level: -1, centerLatLng: { lat: 34.0522, lng: -118.2437 }, spanDeg: 4.5, outSize: 2048, label: "Los Angeles region", texturePath: "Assets/Textures/Globe/Los Angeles_L-1.png" },
+    transition: { level: -1, centerLatLng: { lat: 33.764523, lng: -118.190466 }, spanDeg: 4.5, outSize: 3072, label: "Los Angeles region", texturePath: "Assets/Textures/Globe/Los Angeles_L-1.png" },
   },
 ];
