@@ -57,6 +57,7 @@ interface CardLike {
 }
 interface StoreLike {
   getCards(): CardLike[];
+  getById(id: string): CardLike | null;
 }
 
 type GlobeIntent =
@@ -102,6 +103,15 @@ export const QUERY_TOOL_DECLARATIONS = [
       "back out to its overview. Call this when the user wants to start a new search or undo the current one.",
     parameters: { type: "OBJECT", properties: {}, required: [] },
   },
+  {
+    name: "get_focused_card",
+    description:
+      "Get the trivia card the user currently has selected or centered — whether they picked it from the " +
+      "floating deck or scrubbed to it in the search results. Works at any time, INCLUDING before any " +
+      "search has been run. Call this whenever the user asks about 'this card', 'this one', or the card " +
+      "they're looking at, so you can answer from its actual text.",
+    parameters: { type: "OBJECT", properties: {}, required: [] },
+  },
 ];
 
 const MAX_SUMMARIES = 8;
@@ -122,6 +132,9 @@ export class QueryOrchestrator {
     }
     if (call.name === "clear_query") {
       return { name: call.name, response: this.clearQuery() as any };
+    }
+    if (call.name === "get_focused_card") {
+      return { name: call.name, response: this.getFocusedCard() };
     }
     return { name: call.name, response: { error: "unknown tool: " + call.name } };
   }
@@ -195,6 +208,20 @@ export class QueryOrchestrator {
     }
     this.globeIntent = { kind: "want_overview" };
     return { ok: true };
+  }
+
+  /**
+   * Returns the card the user is currently centering in the result deck, so the
+   * model can answer a question about "this card". Pull-based on purpose: the card
+   * text is never pushed into the session, so the agent stays silent while the user
+   * browses and only learns the card when it actually calls this.
+   */
+  private getFocusedCard(): { [key: string]: any } {
+    const id = this.deck ? this.deck.getFocusedResultId() : null;
+    if (!id) return { error: "no card is currently centered" };
+    const card = this.store ? this.store.getById(id) : null;
+    if (!card) return { error: "card not found" };
+    return { text: card.text, location: card.location, captureDate: card.captureDate };
   }
 
   /**

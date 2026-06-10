@@ -70,6 +70,9 @@
     coverFlickThreshold: true
     coverInvertScrub: true
     coverInvertFold: true
+    coverVGapFrac: true
+    coverVStepFrac: true
+    coverVFoldDeg: true
     enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -116,6 +119,9 @@
       coverFlickThreshold: !<float> 25.000000
       coverInvertScrub: false
       coverInvertFold: false
+      coverVGapFrac: 0.500000
+      coverVStepFrac: 0.600000
+      coverVFoldDeg: !<float> 65.000000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:

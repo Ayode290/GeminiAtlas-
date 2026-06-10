@@ -241,6 +241,15 @@ export class CardDeckController extends BaseScriptComponent {
   @input
   @hint("Invert the side-card fold direction (which way left/right cards tilt).")
   coverInvertFold: boolean = false
+  @input
+  @hint("Vertical browse deck: top/bottom card centre offset as a FRACTION of the centred card's height. Lower = more tucked/overlapping (deck); higher = more separated.")
+  coverVGapFrac: number = 0.5
+  @input
+  @hint("Vertical browse deck: extra offset (fraction of card height) for the transient incoming card beyond the edge.")
+  coverVStepFrac: number = 0.6
+  @input
+  @hint("Vertical browse deck: resting tilt (deg) of the top/bottom card. Steep so it foreshortens into a peeking sliver (Cover Flow look).")
+  coverVFoldDeg: number = 65
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -966,9 +975,11 @@ export class CardDeckController extends BaseScriptComponent {
   }
 
   /**
-   * The store id of the result card currently CENTRED in the CoverFlow deck (the
-   * one "in selection"), or null when none / no results shown. The query agent
-   * polls this so its context follows whichever card the user has scrubbed to.
+   * The store id of the card the user currently has CENTRED, or null when none.
+   * Covers both front decks: the vertical pinch-select browse (centre = role
+   * index 1) and the horizontal CoverFlow result row (centre = round(scrubPos)).
+   * The query agent calls this on demand so it can answer about whichever card
+   * the user has selected or scrubbed to.
    */
   getFocusedResultId(): string | null {
     // Vertical browse deck: the centred card is always role index 1 (roles are
@@ -1201,10 +1212,10 @@ export class CardDeckController extends BaseScriptComponent {
   private seedIncomingAtEdge(slotIndex: number, fromTop: boolean): void {
     const slot = this.slots[slotIndex]
     if (!slot) return
-    const centerGap = this.num(this.coverCenterGapCm, 14)
-    const sideSpacing = this.num(this.coverSideSpacingCm, 6)
+    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
+    const cardH = this.verticalCardHeight(slot, centerSize)
     const depthStep = this.num(this.coverDepthStepCm, 6)
-    const off = (fromTop ? 1 : -1) * (centerGap + sideSpacing)
+    const off = (fromTop ? 1 : -1) * cardH * (this.num(this.coverVGapFrac, 0.5) + this.num(this.coverVStepFrac, 0.6))
     slot.trans.setWorldPosition(
       this.resultRowAnchor
         .add(vec3.up().uniformScale(off))
@@ -1238,6 +1249,18 @@ export class CardDeckController extends BaseScriptComponent {
     this.vDragTracker.end()
   }
 
+  // World height (cm) of a card at the given world scale: the measured footprint when
+  // available, else the authored cardHeightCm converted to this scale. Drives the
+  // height-relative vertical offsets so the deck tucks correctly for any card size.
+  private verticalCardHeight(slot: DeckSlot, worldScale: number): number {
+    if (slot.card && slot.card.isContentMeasured()) {
+      const h = slot.card.getContentLocalSize().y * worldScale
+      if (h > 1e-3 && isFinite(h)) return h
+    }
+    const base = this.cardSizeBase > 1e-4 ? this.cardSizeBase : 0.3
+    return this.cardHeightCm * worldScale / base
+  }
+
   // Vertical analogue of layoutResultSlot: lays the 3 cards along the up axis and folds
   // them about the horizontal axis (resultRowRight) instead of world-up. Only roles
   // -1/0/+1 exist; r slides with vScrub during a drag so cards ease through smoothly.
@@ -1251,16 +1274,21 @@ export class CardDeckController extends BaseScriptComponent {
     else if (slotIndex === this.vIncoming) k = this.vIncomingK
     else return
 
-    const centerGap = this.num(this.coverCenterGapCm, 14)
-    const sideSpacing = this.num(this.coverSideSpacingCm, 6)
+    // Cover Flow rotated 90°: the top/bottom card tucks BEHIND the centre and peeks out by a
+    // sliver. Offsets are a FRACTION of the centred card's height (self-scaling vs card size)
+    // so the cards always overlap into a deck instead of floating apart; the fold is steep so
+    // each side card foreshortens into that sliver.
+    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
+    const cardH = this.verticalCardHeight(slot, centerSize)
+    const centerGap = cardH * this.num(this.coverVGapFrac, 0.5)
+    const sideSpacing = cardH * this.num(this.coverVStepFrac, 0.6)
     const depthStep = this.num(this.coverDepthStepCm, 6)
-    const foldStart = this.num(this.coverFoldStartDeg, 45)
+    const foldStart = this.num(this.coverVFoldDeg, 65)
     const foldStep = this.num(this.coverFoldStepDeg, 12)
     const maxFold = this.num(this.coverMaxFoldDeg, 75)
     const falloff = this.num(this.coverSideScaleFalloff, 0.82)
     const minFrac = this.num(this.coverMinScaleFrac, 0.4)
     const maxVis = this.num(this.coverMaxVisiblePerSide, 6)
-    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
 
     const r = k - this.vScrub
     const a = Math.abs(r)
@@ -1299,13 +1327,17 @@ export class CardDeckController extends BaseScriptComponent {
   // the flick test. As soon as the drag direction is known it materialises the incoming
   // card on that edge so the deck slides continuously (mirrors the horizontal scrub).
   private updateVerticalScrub(): void {
+    // Belt-and-suspenders: never advance the scrub on a frame where the hand isn't actually
+    // pinching, so plain hand-sway can't scroll even if a pinch-up event was dropped.
+    if (!this.handIsPinching(this.vPinchIsRight)) return
     const point = this.handPoint(this.vPinchIsRight)
     if (!point) return
     const dCm = this.vDragTracker.update(point).dot(vec3.up())
     this.vDragAccumCm += dCm
     const step = this.num(this.coverScrubStepCm, 12)
-    // Drag UP (positive travel) -> vScrub negative -> top card eases toward centre.
-    const dir = this.coverInvertScrub ? 1 : -1
+    // Drag DOWN (negative up-travel) -> vScrub negative -> TOP card eases toward centre;
+    // drag UP -> BOTTOM card eases toward centre (direct-manipulation, grab-and-pull).
+    const dir = this.coverInvertScrub ? -1 : 1
     let raw = this.vScrubStart + dir * this.vDragAccumCm / step
 
     // Lock in the drag direction the first time the user moves off centre, and prepare the

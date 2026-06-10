@@ -144,9 +144,10 @@ export class NudgeVoice extends BaseScriptComponent {
 
     // If a conversational agent (card or card-query) already owns the single live
     // session, DON'T open a competing one — the gateway evicts/zombifies the older
-    // session on a new connect. We'll deliver the nudge through that agent at speak time.
+    // session on a new connect. The user is already engaged, so the nudge will be
+    // skipped at speak time (re-checked then, since an agent may arrive in between).
     if (this.activeConversationalAgent()) {
-      this.logger.info("A conversational agent is active — will delegate nudge (no own session).");
+      this.logger.info("A conversational agent is active — will skip nudge (no own session).");
     } else {
       // Gemini Live streams audio back at 24 kHz.
       this.dynamicAudioOutput.initialize(24000);
@@ -163,17 +164,19 @@ export class NudgeVoice extends BaseScriptComponent {
       this.logger.info("World discovered during lead window — skipping nudge.");
       return;
     }
-    // While the nudge speaks, the agent's orb returns to its home corner (whether
-    // the line plays from our own session or is delegated to the card agent).
+    // While the nudge speaks from our own session, the agent's orb returns home.
     const sphere = (global as any).agentSphere;
     if (sphere && typeof sphere.goHome === "function") sphere.goHome();
-    // Prefer delegating to whichever conversational agent holds the live session.
-    // This also covers the case where a card was captured (or a query started)
-    // during our lead window and evicted our own socket.
-    const agent = this.activeConversationalAgent();
-    if (agent) {
-      this.logger.info("Delegating nudge to the active conversational agent's session.");
-      agent.speakIntent(this.nudgeIntent);
+    // If a conversational agent (card / card-query) holds the live session, the
+    // user is already engaged and — in the cosmos view — past world discovery, so
+    // this "discover the world" nudge is moot. Crucially, delegating it would send
+    // an off-topic user turn into that agent's session (turn_complete:true),
+    // forcing it to take another turn and re-narrate its last line (e.g. repeating
+    // a query summary). So skip the nudge entirely rather than ride their session.
+    // This also covers a query starting during our lazy-connect lead window — which
+    // is why the check must happen here at speak time, not just at connect time.
+    if (this.activeConversationalAgent()) {
+      this.logger.info("Conversational agent active — skipping nudge (user already engaged).");
       if (this.sessionReady) this.disconnect(); // close our own if we opened one
       return;
     }

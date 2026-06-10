@@ -51,6 +51,9 @@
     coverSideScaleFalloff: false
     coverSideSpacingCm: false
     coverSnapRate: false
+    coverVFoldDeg: false
+    coverVGapFrac: false
+    coverVStepFrac: false
     dateRangeDays: false
     dateWeight: false
     enableLogging: false
@@ -116,6 +119,9 @@
       coverFlickThreshold: !<float> 25.000000
       coverInvertScrub: false
       coverInvertFold: false
+      coverVGapFrac: 0.500000
+      coverVStepFrac: 0.600000
+      coverVFoldDeg: !<float> 65.000000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -176,6 +182,9 @@
     - '// @input float coverFlickThreshold = 25 {"hint":"Release hand speed (cm/s) above which a quick flick advances one extra card in that direction."}'
     - '// @input bool coverInvertScrub {"hint":"Invert the pinch-drag direction (which way you move your hand for next vs. previous)."}'
     - '// @input bool coverInvertFold {"hint":"Invert the side-card fold direction (which way left/right cards tilt)."}'
+    - "// @input float coverVGapFrac = 0.5 {\"hint\":\"Vertical browse deck: top/bottom card centre offset as a FRACTION of the centred card's height. Lower = more tucked/overlapping (deck); higher = more separated.\"}"
+    - '// @input float coverVStepFrac = 0.6 {"hint":"Vertical browse deck: extra offset (fraction of card height) for the transient incoming card beyond the edge."}'
+    - '// @input float coverVFoldDeg = 65 {"hint":"Vertical browse deck: resting tilt (deg) of the top/bottom card. Steep so it foreshortens into a peeking sliver (Cover Flow look)."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - // @input bool enableLogging

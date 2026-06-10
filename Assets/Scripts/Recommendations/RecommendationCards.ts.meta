@@ -1,0 +1,110 @@
+- !<AssetImportMetadata/b51c5198-1477-483a-bb43-fc30987b17ff>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> 56fa1134-87f2-4aed-9ce5-acb4e424450e
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> 56fa1134-87f2-4aed-9ce5-acb4e424450e
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 63e2b02c-9e0c-4f86-b1b1-75d14d7931fa
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/63e2b02c-9e0c-4f86-b1b1-75d14d7931fa>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: ad48a13e-219a-4077-8f65-ed74046072f5
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    arrowDistanceCm: false
+    arrowKeepFlat: false
+    arrowLifetimeSeconds: false
+    arrowPrefab: false
+    arrowScreenY: false
+    arrowSizeCm: false
+    arrowYawOffsetDeg: false
+    cameraObject: false
+    cardHeadings: false
+    cardImages: false
+    cardPrefab: false
+    cardSize: false
+    cardSpacingCm: false
+    enableLogging: false
+    flyInDuration: false
+    rowDepthCm: false
+    rowRiseCm: false
+    selectHoldSeconds: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - cardPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      cameraObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
+      arrowPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      cardImages: !<reference.Texture[]>
+        []
+      cardHeadings: !<float[]>
+        - -40.000000
+        - 0.000000
+        - 40.000000
+      rowDepthCm: !<float> 60.000000
+      rowRiseCm: !<float> 0.000000
+      cardSpacingCm: !<float> 22.000000
+      cardSize: 0.500000
+      flyInDuration: 0.800000
+      selectHoldSeconds: !<float> 3.000000
+      arrowLifetimeSeconds: !<float> 10.000000
+      arrowScreenY: -0.600000
+      arrowDistanceCm: !<float> 100.000000
+      arrowSizeCm: !<float> 8.000000
+      arrowYawOffsetDeg: !<float> 0.000000
+      arrowKeepFlat: true
+      enableLogging: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">RecommendationCards – fly-in cards → pinch-select → direction arrow</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
+    - '// @input Asset.ObjectPrefab cardPrefab {"hint":"The PremadeCard prefab, instantiated once per recommendation card."}'
+    - '// @input SceneObject cameraObject {"hint":"Camera object – used for row placement, billboarding, and head-locking the arrow."}'
+    - '// @input Asset.ObjectPrefab arrowPrefab {"hint":"The white arrow prefab (Arrowgeo.obj with an unlit white material)."}'
+    - '// @input Asset.Texture[] cardImages {"hint":"Three card images, in order: 0 Art Festival, 1 Reality Hack, 2 Snap Lounge."}'
+    - "// @input float[] cardHeadings = {-40,0,40} {\"hint\":\"Per-card heading in degrees (yaw about world-up, relative to the user's forward at selection). One per card; the arrow points along this direction.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Layout</span>"}'
+    - '// @input float rowDepthCm = 60 {"hint":"Distance (cm) in front of the user where the card row settles."}'
+    - '// @input float rowRiseCm {"hint":"Vertical offset (cm) of the card row relative to eye level."}'
+    - '// @input float cardSpacingCm = 22 {"hint":"Horizontal gap (cm) between adjacent cards in the row."}'
+    - '// @input float cardSize = 0.5 {"hint":"World scale applied to each card."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Timing (seconds)</span>"}'
+    - '// @input float flyInDuration = 0.8 {"hint":"Fly-in animation duration."}'
+    - '// @input float selectHoldSeconds = 3 {"hint":"How long the selected card stays before turning into the arrow."}'
+    - '// @input float arrowLifetimeSeconds = 10 {"hint":"How long the arrow stays before dissipating."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Arrow placement</span>"}'
+    - '// @input float arrowScreenY = -0.6 {"hint":"Vertical FoV fraction for the arrow: -1 bottom .. +1 top. Keep low to avoid blocking the view."}'
+    - '// @input float arrowDistanceCm = 100 {"hint":"Distance (cm) in front of the head where the arrow sits. Larger = farther away and smaller on screen."}'
+    - "// @input float arrowSizeCm = 8 {\"hint\":\"On-screen arrow size: its largest dimension in centimetres. Auto-scaled from the mesh bounds, so it's predictable regardless of the imported model's native units.\"}"
+    - "// @input float arrowYawOffsetDeg {\"hint\":\"Yaw correction (deg) for the imported arrow mesh's natural axis. Tune so the arrow tip points along the heading.\"}"
+    - '// @input bool arrowKeepFlat = true {"hint":"Keep the arrow flat (yaw-only): project the pointing direction onto the horizontal plane."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - // @input bool enableLogging

@@ -29,6 +29,7 @@ import { DynamicAudioOutput } from "RemoteServiceGateway.lspkg/Helpers/DynamicAu
 import { MicrophoneRecorder } from "RemoteServiceGateway.lspkg/Helpers/MicrophoneRecorder";
 import { AudioProcessor } from "RemoteServiceGateway.lspkg/Helpers/AudioProcessor";
 import { pcm16Rms, pcm16DurationSec } from "./AudioLevel";
+import { BARGE_IN_INSTRUCTION, handleBargeIn } from "./VoiceBargeIn";
 import {
   CARD_EDIT_TOOL_DECLARATIONS,
   CardEditTarget,
@@ -205,7 +206,7 @@ export class CardVoiceAgent extends BaseScriptComponent {
           system_instruction: {
             // Force the tool directive on in code; the persona @input alone can be a
             // stale prefab value that omits it (see TOOL_USAGE_INSTRUCTION).
-            parts: [{ text: this.persona + TOOL_USAGE_INSTRUCTION }],
+            parts: [{ text: this.persona + TOOL_USAGE_INSTRUCTION + BARGE_IN_INSTRUCTION }],
           },
           tools: [{ functionDeclarations: CARD_EDIT_TOOL_DECLARATIONS as any }],
           // Keep multi-card conversations from overflowing the context window.
@@ -245,6 +246,12 @@ export class CardVoiceAgent extends BaseScriptComponent {
         }
         return;
       }
+
+      // Barge-in: the user started talking over the agent. Gemini stops generating
+      // and flags `interrupted`; flush the seconds of audio already buffered so the
+      // agent goes quiet immediately instead of finishing its sentence. The session
+      // + mic stay open, so the user's speech is already streaming up for the reply.
+      if (handleBargeIn(message, this.dynamicAudioOutput)) return;
 
       // The model decided to edit this card's caption. Gemini Live may deliver the
       // call as a top-level toolCall OR as a functionCall part inside the model turn

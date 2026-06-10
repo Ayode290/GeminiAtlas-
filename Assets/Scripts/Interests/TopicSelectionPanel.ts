@@ -352,6 +352,12 @@ export class TopicSelectionPanel extends BaseScriptComponent {
       hostVoice.announceInterests(selected)
     }
 
+    // Fly in the three recommendation cards in sync with the announcement.
+    const recs = (global as any).recommendationCards
+    if (recs && typeof recs.show === "function") {
+      recs.show()
+    }
+
     const frame = this.resolveFrame()
     if (frame) {
       frame.getSceneObject().enabled = false

@@ -29,6 +29,7 @@ import { DynamicAudioOutput } from "RemoteServiceGateway.lspkg/Helpers/DynamicAu
 import { MicrophoneRecorder } from "RemoteServiceGateway.lspkg/Helpers/MicrophoneRecorder";
 import { AudioProcessor } from "RemoteServiceGateway.lspkg/Helpers/AudioProcessor";
 import { pcm16Rms, pcm16DurationSec } from "../AudioLevel";
+import { BARGE_IN_INSTRUCTION, handleBargeIn } from "../VoiceBargeIn";
 import { CardDeckController } from "./CardDeckController";
 import { GlobeController } from "../Globe/GlobeController";
 import { QueryOrchestrator, QUERY_TOOL_DECLARATIONS, ToolCall } from "./QueryOrchestrator";
@@ -107,9 +108,13 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
     "how many and where (e.g. 'I found 3 cards captured in Tokyo!'). If some matches can't be shown " +
     "(unshown > 0), mention that. After you summarize the results, STOP and wait silently — do NOT ask the " +
     "user what they want to know and do NOT invite follow-up questions; only speak again when the user " +
-    "speaks first. The user may then ask about the card they're looking at — I will tell you which card " +
-    "that is; do NOT bring it up or speak about it until they actually ask. Keep " +
-    "replies to one to three warm sentences. To start over or undo, call clear_query.";
+    "speaks first. At ANY point — including before any search — the user may ask about the card they're " +
+    "looking at ('this card', 'this one', the card in front of them). You do NOT know which card that is " +
+    "until you call get_focused_card, so ALWAYS call it first and answer from its text; never guess. NEVER " +
+    "tell the user to run a search first when they're asking about a card in view — only if get_focused_card " +
+    "reports no card is selected should you gently say you're not sure which card they mean and offer to " +
+    "search. Do NOT bring the card up until they actually ask. Keep replies to one to three warm sentences. " +
+    "To start over or undo, call clear_query.";
 
   @input
   @hint("Gemini Live model id (no 'models/' prefix). Supported: gemini-live-2.5-flash, gemini-2.0-flash-live-preview-04-09, gemini-live-2.5-flash-preview-native-audio")
@@ -130,8 +135,6 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
   private connecting = false;
   private micWired = false;
   private listening = false;
-  // The result card the user is currently looking at; pushed as context on change.
-  private focusedId: string | null = null;
   // How long the user has been looking at the deck this dwell (for gaze-arm).
   private gazeDwell = 0;
 
@@ -235,7 +238,7 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
         setup: {
           model: `models/${this.model}`,
           generation_config: generationConfig,
-          system_instruction: { parts: [{ text: this.persona }] },
+          system_instruction: { parts: [{ text: this.persona + BARGE_IN_INSTRUCTION }] },
           tools: [{ functionDeclarations: QUERY_TOOL_DECLARATIONS as any }],
           contextWindowCompression: {
             triggerTokens: 20000,
@@ -271,6 +274,12 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
       this.startListening();
       return;
     }
+
+    // Barge-in: the user started talking over the agent. Gemini stops generating and
+    // flags `interrupted`; flush the seconds of audio already buffered so the agent
+    // goes quiet immediately. The session + mic stay open, so the user's speech is
+    // already streaming up for the reply.
+    if (handleBargeIn(message, this.dynamicAudioOutput)) return;
 
     // The model decided to run a query / clear — execute it and reply.
     if (message?.toolCall?.functionCalls) {
@@ -355,7 +364,7 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
     return this.orchestrator;
   }
 
-  // --- per-frame: globe reconcile + focus context ----------------------------
+  // --- per-frame: globe reconcile + gaze activation --------------------------
 
   private update(dt: number): void {
     if (this.orchestrator) this.orchestrator.reconcileGlobe();
@@ -388,14 +397,6 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
       // fresh look is required once the welcome session frees the slot.
       this.gazeDwell = 0;
     }
-
-    if (!this.sessionReady) return;
-
-    const id = this.cardDeck.getFocusedResultId();
-    if (id !== this.focusedId) {
-      this.focusedId = id;
-      if (id) this.pushFocusContext(id);
-    }
   }
 
   // True only while the deck is actually present and active in the scene
@@ -411,35 +412,5 @@ export class CardQueryVoiceAgent extends BaseScriptComponent {
   private isHostVoiceActive(): boolean {
     const host = (global as any).hostVoice;
     return !!host && typeof host.isActive === "function" && host.isActive();
-  }
-
-  /**
-   * Silently tells the model which result card the user is now looking at, so it
-   * can answer questions about it. Phrased as quiet context — the persona keeps
-   * the agent from speaking until the user actually asks.
-   */
-  private pushFocusContext(id: string): void {
-    const store = (global as any).cropCardStore;
-    const record = store && typeof store.getById === "function" ? store.getById(id) : null;
-    if (!record) return;
-
-    const text =
-      "[context — do not speak unless asked] The user is now looking at this card:\n" +
-      record.text +
-      "\n(captured in " + record.location + " on " + record.captureDate + "). " +
-      "If they ask about it, answer from this.";
-
-    // turn_complete:false — append this card to the session context WITHOUT
-    // forcing a model turn. Gaze moves across the result row fire this on every
-    // change; with turn_complete:true the model spoke ("what do you want to know?")
-    // each time. The card text stays in context, so when the user actually speaks
-    // (their realtime audio completes a turn) the model can answer from it.
-    const turn: GeminiTypes.Live.ClientContent = {
-      client_content: {
-        turns: [{ role: "user", parts: [{ text }] }],
-        turn_complete: false,
-      },
-    };
-    this.liveSession.send(turn);
   }
 }

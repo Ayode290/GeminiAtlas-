@@ -1,0 +1,58 @@
+- !<ObjectPrefab/50beb30c-7a2d-4b17-8ead-c9ef9eacd1b1>
+  PackagePath: ""
+  objects:
+    - !<own> 718bdefc-008a-4d65-ad10-ddb6328d0588
+  LazyLoading: false
+  RetainAssets: true
+- !<SceneObject/0ef89377-dfc0-4462-98bc-80f90125bb60>
+  PrefabRemaps:
+    []
+  Name: ""
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> fd81eede-259a-474e-ae3d-8fa2afbf888e
+- !<SceneObject/718bdefc-008a-4d65-ad10-ddb6328d0588>
+  PrefabRemaps:
+    - 0ef89377-dfc0-4462-98bc-80f90125bb60: 0ef89377-dfc0-4462-6743-7f06feda449f
+    - 718bdefc-008a-4d65-ad10-ddb6328d0588: 718bdefc-008a-4d65-52ef-2249cd72fa77
+    - fd81eede-259a-474e-ae3d-8fa2afbf888e: fd81eede-259a-474e-51c2-705d50407771
+  Name: Arrowgeo
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    - !<own> 0ef89377-dfc0-4462-98bc-80f90125bb60
+  Components:
+    []
+- !<RenderMeshVisual/fd81eede-259a-474e-ae3d-8fa2afbf888e>
+  PrefabRemaps:
+    []
+  Name: component_0
+  Enabled: true
+  RenderOrder: 0
+  StretchMode: Stretch
+  VerticalAlignment: Center
+  HorizontalAlignment: Center
+  MeshShadowMode: None
+  ShadowColor: {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
+  ShadowDensity: 1.000000
+  Materials:
+    - !<reference> 12f2e16c-daaa-45b4-8404-8af65e2788cc
+  Mesh: !<reference> 4712f592-59ef-4e24-9d30-afa3512d72c3
+  Skin: !<reference> 00000000-0000-0000-0000-000000000000
+  BlendShapesEnabled: true
+  BlendNormals: false
+  BlendShapes:
+    {}

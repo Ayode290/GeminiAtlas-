@@ -1,0 +1,73 @@
+- !<ObjectPrefab/7ff872d0-aad1-4d86-b2d5-0115309b6401>
+  PackagePath: ""
+  objects:
+    - !<own> 0812c623-fcc2-4411-9acf-a325469699fd
+  LazyLoading: false
+  RetainAssets: true
+- !<SceneObject/0812c623-fcc2-4411-9acf-a325469699fd>
+  PrefabRemaps:
+    - 0812c623-fcc2-4411-9acf-a325469699fd: 0812c623-fcc2-4411-6530-5cdab9696602
+    - 9a19d007-bcff-46aa-b6e4-5e48300027dc: 9a19d007-bcff-46aa-491b-a1b7cfffd823
+  Name: RecommendationCards
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 9a19d007-bcff-46aa-b6e4-5e48300027dc
+- !<ScriptComponent/9a19d007-bcff-46aa-b6e4-5e48300027dc>
+  PrefabRemaps:
+    []
+  Name: RecommendationCards
+  Enabled: true
+  ScriptAsset: !<reference> 56fa1134-87f2-4aed-9ce5-acb4e424450e
+  ScriptInputsDefault:
+    cardHeadings: true
+    rowDepthCm: true
+    rowRiseCm: true
+    cardSpacingCm: true
+    cardSize: true
+    flyInDuration: true
+    selectHoldSeconds: true
+    arrowLifetimeSeconds: true
+    arrowScreenY: true
+    arrowDistanceCm: true
+    arrowSizeCm: true
+    arrowYawOffsetDeg: true
+    arrowKeepFlat: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      cardPrefab: !<reference.ObjectPrefab> 02b4824a-47d6-4142-adfd-202c4493d953
+      cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
+      arrowPrefab: !<reference.ObjectPrefab> 50beb30c-7a2d-4b17-8ead-c9ef9eacd1b1
+      cardImages: !<reference.Texture[]>
+        - !<reference> cd14af88-0f70-45ce-b202-d25134f600b9
+        - !<reference> 2d6fe193-d1ea-4da7-8deb-83fac10b3e79
+        - !<reference> 115c79ce-5e1a-40fa-a1d3-e3c008218e8d
+      cardHeadings: !<float[]>
+        - -40.000000
+        - 0.000000
+        - 40.000000
+      rowDepthCm: !<float> 60.000000
+      rowRiseCm: !<float> 0.000000
+      cardSpacingCm: !<float> 22.000000
+      cardSize: 0.500000
+      flyInDuration: 0.800000
+      selectHoldSeconds: !<float> 3.000000
+      arrowLifetimeSeconds: !<float> 10.000000
+      arrowScreenY: -0.600000
+      arrowDistanceCm: !<float> 100.000000
+      arrowSizeCm: !<float> 8.000000
+      arrowYawOffsetDeg: !<float> 0.000000
+      arrowKeepFlat: true
+      enableLogging: true
+  ScriptTypes:
+    "":
+      {}

@@ -217,6 +217,19 @@ export class AgentSphere extends BaseScriptComponent {
   }
 
   /**
+   * Barge-in: the agent was cut off mid-utterance, so drop any scheduled audio and
+   * silence the envelope NOW. Without this the orb keeps "talking" for the seconds
+   * of frames already queued (Gemini bursts them up front). Pairs with
+   * DynamicAudioOutput.interruptAudioOutput() flushing the actual playback.
+   */
+  interruptAudio(): void {
+    this.levelQueue = [];
+    this.scheduledSeconds = 0;
+    this.playoutDelay = 0;
+    this.audioLevel = 0;
+  }
+
+  /**
    * Advances the playback schedule by `dt` and returns the shaped loudness of
    * whatever is playing now (0 when the schedule has drained = audio finished).
    */
