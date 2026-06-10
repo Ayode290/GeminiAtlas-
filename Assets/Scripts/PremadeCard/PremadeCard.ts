@@ -261,6 +261,14 @@ export class PremadeCard extends BaseScriptComponent {
   }
 
   /**
+   * Linear morph value in [0, 1]: 0 = a fully-closed bubble, 1 = a fully-open
+   * card. Anything above 0 means the bubble has begun (or finished) transforming.
+   */
+  getMorphProgress(): number {
+    return this.morph ? this.morph.progress : 0
+  }
+
+  /**
    * The card's true footprint (width, height) in root-local cm, taken from the
    * last auto-fit border pass. Scale-invariant — multiply by the card's world
    * scale to get the real world size. Valid only after isContentMeasured().

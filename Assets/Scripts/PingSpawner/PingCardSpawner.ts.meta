@@ -40,14 +40,20 @@
     gazeConeAngleDeg: false
     gazeDwellSec: false
     imageWidth: false
+    labelColor: false
+    labelFontSize: false
+    labelLine1: false
+    labelVerticalOffset: false
     location: false
     maxDistance: false
+    minAngularSeparationDeg: false
     minDistance: false
     pingController: false
     placeholderImages: false
     renderLayerSource: false
     revealOffsetSec: false
     revealPopDuration: false
+    showDistanceLabel: false
     wavefrontSpeedOverride: false
   ScriptTypesHidden:
     {}
@@ -74,12 +80,18 @@
       concentrateTowardFront: true
       frontArcHalfAngleDeg: !<float> 90.000000
       frontBias: !<float> 1.000000
+      minAngularSeparationDeg: !<float> 0.000000
       wavefrontSpeedOverride: !<float> 0.000000
       revealOffsetSec: !<float> 0.000000
       revealPopDuration: 0.500000
       imageWidth: !<float> 0.000000
       gazeDwellSec: !<float> 1.000000
       gazeConeAngleDeg: !<float> 12.000000
+      showDistanceLabel: true
+      labelLine1: Look to Open
+      labelFontSize: !<float> 36.000000
+      labelVerticalOffset: !<float> 8.000000
+      labelColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
       allowRespawn: false
       enableLogging: false
       enableLoggingLifecycle: false
@@ -110,6 +122,7 @@
     - '// @input bool concentrateTowardFront = true {"hint":"Bias the cards into an arc toward where the camera is looking instead of scattering them evenly all around. Needs a Camera Object. Off = full 360° ring."}'
     - "// @input float frontArcHalfAngleDeg = 90 {\"hint\":\"Half-angle (degrees) of the arc cards spawn within, centered on the camera's view direction. 180 = full ring, 90 = front half, smaller = a tight cone dead-ahead.\"}"
     - '// @input float frontBias = 1 {"hint":"How hard cards cluster toward dead-center of the arc. 0 = spread evenly across the arc, higher = packed near the center of view."}'
+    - "// @input float minAngularSeparationDeg {\"hint\":\"Minimum angular gap (degrees, as seen from the camera) kept between any two spawned bubbles so they spread out on screen instead of bunching. 0 = no spacing. Best-effort: relaxed when there isn't room for every card.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Wavefront timing</span>"}'
     - '// @input float wavefrontSpeedOverride {"hint":"Override the wavefront speed (cm/s). 0 = read pingSpeed from the linked PingController (recommended so reveals match the visible ping)."}'
@@ -120,6 +133,13 @@
     - "// @input float imageWidth {\"hint\":\"Displayed image width (cm) for each card; height follows the image aspect. 0 = keep the prefab's authored width.\"}"
     - '// @input float gazeDwellSec = 1 {"hint":"Seconds the player must gaze at a bubble before it expands into a card."}'
     - "// @input float gazeConeAngleDeg = 12 {\"hint\":\"Half-angle (degrees) of the gaze cone that counts as 'looking at' a bubble.\"}"
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Distance label</span>"}'
+    - '// @input bool showDistanceLabel = true {"hint":"Attach a two-line label under each closed bubble (1st line = the prompt, 2nd = live distance to the camera). It vanishes when the bubble expands into a card."}'
+    - '// @input string labelLine1 = "Look to Open" {"hint":"First line of the label (the call-to-action shown above the distance)."}'
+    - '// @input float labelFontSize = 36 {"hint":"Font size (points) for the label text."}'
+    - "// @input float labelVerticalOffset = 8 {\"hint\":\"How far below the bubble the label sits, in the card's local units. Increase to push it further down.\"}"
+    - '// @input vec4 labelColor = {1,1,1,1} {"hint":"Label text color (RGBA)."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Behaviour</span>"}'
     - '// @input bool allowRespawn {"hint":"Allow a later wave to clear the previous cards and spawn again. Off = the first wave wins and later calls are ignored."}'

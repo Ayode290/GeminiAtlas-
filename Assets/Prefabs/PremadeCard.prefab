@@ -230,7 +230,7 @@
       showThreshold: 0.900000
       gazeToExpand: true
       gazeDwell: !<float> 1.000000
-      gazeConeAngleDeg: !<float> 24.000000
+      gazeConeAngleDeg: !<float> 18.000000
       collapseWhenGazeLost: true
       billboard: true
       enableLogging: false

@@ -402,15 +402,16 @@
   ScriptInputsDefault:
     placeholderImages: true
     location: true
-    minDistance: true
     concentrateTowardFront: true
-    frontArcHalfAngleDeg: true
     wavefrontSpeedOverride: true
     revealOffsetSec: true
     revealPopDuration: true
     imageWidth: true
     gazeDwellSec: true
     gazeConeAngleDeg: true
+    showDistanceLabel: true
+    labelLine1: true
+    labelColor: true
     allowRespawn: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -426,19 +427,25 @@
       bubbleFields: !<MappingBased.AssignableType_1[]>
         - !<reference> d6415e26-4b5d-4fa7-ab71-93cc4876ccf1
       location: Seattle
-      minDistance: !<float> 80.000000
-      maxDistance: !<float> 200.000000
+      minDistance: !<float> 120.000000
+      maxDistance: !<float> 240.000000
       floorHeight: !<float> -30.000000
       ceilingHeight: !<float> 30.000000
       concentrateTowardFront: true
-      frontArcHalfAngleDeg: !<float> 90.000000
-      frontBias: 0.300000
+      frontArcHalfAngleDeg: !<float> 120.000000
+      frontBias: 0.150000
+      minAngularSeparationDeg: !<float> 8.000000
       wavefrontSpeedOverride: !<float> 0.000000
       revealOffsetSec: !<float> 0.000000
       revealPopDuration: 0.500000
       imageWidth: !<float> 0.000000
       gazeDwellSec: !<float> 1.000000
       gazeConeAngleDeg: !<float> 12.000000
+      showDistanceLabel: true
+      labelLine1: Look to Open
+      labelFontSize: !<float> 70.000000
+      labelVerticalOffset: !<float> 10.000000
+      labelColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
       allowRespawn: false
       enableLogging: true
       enableLoggingLifecycle: false

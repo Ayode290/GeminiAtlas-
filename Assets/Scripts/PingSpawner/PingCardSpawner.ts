@@ -44,6 +44,20 @@ const DEFAULT_WAVEFRONT_SPEED = 250
 // border auto-fit, which divides by the root's world scale, never sees a zero).
 const POP_START_SCALE = 0.02
 
+// Rejection-sampling budget per card when enforcing a minimum angular gap. After
+// this many tries we keep the most-separated candidate so spawning never stalls.
+const SEPARATION_MAX_ATTEMPTS = 24
+
+// One per spawned card: the "Look to Open" + distance label hung under the
+// closed bubble. It billboards/pops with the card (it is a child of the root)
+// and is dropped from updates the moment the card expands.
+interface CardLabel {
+  obj: SceneObject
+  text: Text
+  card: PremadeCard
+  cardTrans: Transform
+}
+
 @component
 export class PingCardSpawner extends BaseScriptComponent {
   @ui.label('<span style="color: #60A5FA;">PingCardSpawner – reveals location-filtered cards on the ping wavefront</span><br/><span style="color: #94A3B8; font-size: 11px;">Call spawnWave(origin) (e.g. from PrayerGestureBehavior). Filters cardDeckData by Location, scatters PremadeCard bubbles in a cylinder, and pops each one when the wavefront reaches it.</span>')
@@ -117,6 +131,10 @@ export class PingCardSpawner extends BaseScriptComponent {
   @hint("How hard cards cluster toward dead-center of the arc. 0 = spread evenly across the arc, higher = packed near the center of view.")
   frontBias: number = 1.0
 
+  @input
+  @hint("Minimum angular gap (degrees, as seen from the camera) kept between any two spawned bubbles so they spread out on screen instead of bunching. 0 = no spacing. Best-effort: relaxed when there isn't room for every card.")
+  minAngularSeparationDeg: number = 0
+
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Wavefront timing</span>')
   @input
@@ -146,6 +164,28 @@ export class PingCardSpawner extends BaseScriptComponent {
   gazeConeAngleDeg: number = 12
 
   @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Distance label</span>')
+  @input
+  @hint("Attach a two-line label under each closed bubble (1st line = the prompt, 2nd = live distance to the camera). It vanishes when the bubble expands into a card.")
+  showDistanceLabel: boolean = true
+
+  @input
+  @hint("First line of the label (the call-to-action shown above the distance).")
+  labelLine1: string = "Look to Open"
+
+  @input
+  @hint("Font size (points) for the label text.")
+  labelFontSize: number = 36
+
+  @input
+  @hint("How far below the bubble the label sits, in the card's local units. Increase to push it further down.")
+  labelVerticalOffset: number = 8
+
+  @input
+  @hint("Label text color (RGBA).")
+  labelColor: vec4 = new vec4(1, 1, 1, 1)
+
+  @ui.separator
   @ui.label('<span style="color: #60A5FA;">Behaviour</span>')
   @input
   @hint("Allow a later wave to clear the previous cards and spawn again. Off = the first wave wins and later calls are ignored.")
@@ -166,6 +206,9 @@ export class PingCardSpawner extends BaseScriptComponent {
   private spawned = false
   private spawnedObjects: SceneObject[] = []
   private popCancels: CancelSet[] = []
+  // Active distance labels, ticked every frame. Expanded cards' labels are
+  // hidden and removed from this list so they stop updating.
+  private labels: CardLabel[] = []
   // Local-space azimuth (radians) pointing toward the camera's view direction,
   // computed once per wave so every card in that wave shares the same "front".
   // null = no concentration this wave (no camera, feature off, or degenerate).
@@ -180,6 +223,9 @@ export class PingCardSpawner extends BaseScriptComponent {
       // from the camera (the on-device ping origin is the player's head).
       this.createEvent("TouchStartEvent").bind(() => this.spawnWave(this.editorOrigin()))
     }
+
+    // Refresh each label's distance text and drop it once its card expands.
+    this.createEvent("UpdateEvent").bind(() => this.updateLabels())
   }
 
   // --- public API ------------------------------------------------------------
@@ -217,8 +263,13 @@ export class PingCardSpawner extends BaseScriptComponent {
     // Resolve "front" once so all cards in this wave land in the same arc.
     this.frontAzimuthForWave = this.computeFrontAzimuth()
 
+    // Spread is measured from the camera (falls back to the ping origin), and the
+    // accepted view directions accumulate so each new card avoids the earlier ones.
+    const camPos = this.cameraObject ? this.cameraObject.getTransform().getWorldPosition() : from
+    const acceptedDirs: vec3[] = []
+
     for (let i = 0; i < entries.length; i++) {
-      const localPos = this.randomCylinderPosition()
+      const localPos = this.sampleSeparatedPosition(toWorld, camPos, acceptedDirs)
       const worldPos = toWorld.multiplyPoint(localPos)
       const dist = worldPos.distance(from)
       const delay = Math.max(0, dist / speed + this.revealOffsetSec)
@@ -237,6 +288,8 @@ export class PingCardSpawner extends BaseScriptComponent {
       if (obj) obj.destroy()
     }
     this.spawnedObjects = []
+    // Label objects are children of the destroyed cards, so just drop the refs.
+    this.labels = []
     this.spawned = false
   }
 
@@ -283,12 +336,60 @@ export class PingCardSpawner extends BaseScriptComponent {
     const card = obj.getComponent(PremadeCard.getTypeName()) as unknown as PremadeCard
     if (card) {
       this.dressCard(obj, card, entry, index)
+      this.attachDistanceLabel(obj, card)
     } else {
       this.logger.warn("Spawned card " + entry.id + " has no PremadeCard component.")
     }
 
     this.spawnedObjects.push(obj)
     this.popIn(trans)
+  }
+
+  // Hangs a centered two-line label under the closed bubble. Parenting it to the
+  // card root means it inherits the card's billboard + pop-in for free and is
+  // destroyed with the card; the layer is matched so it draws wherever the card
+  // does. The distance line is filled in (and refreshed) by updateLabels().
+  private attachDistanceLabel(obj: SceneObject, card: PremadeCard): void {
+    if (!this.showDistanceLabel) return
+
+    const labelObj = global.scene.createSceneObject("PingCardLabel")
+    labelObj.setParent(obj)
+    labelObj.layer = obj.layer
+    labelObj.getTransform().setLocalPosition(new vec3(0, -this.labelVerticalOffset, 0))
+
+    const text = labelObj.createComponent("Component.Text") as Text
+    text.horizontalAlignment = HorizontalAlignment.Center
+    text.verticalAlignment = VerticalAlignment.Center
+    text.size = Math.max(1, Math.round(this.labelFontSize))
+    text.textFill.color = this.labelColor
+    text.text = this.labelLine1 + "\n--"
+
+    this.labels.push({ obj: labelObj, text, card, cardTrans: obj.getTransform() })
+  }
+
+  // Per-frame: rewrites each label's distance line and removes labels whose card
+  // has expanded (those are hidden permanently — cards here stay open).
+  private updateLabels(): void {
+    if (this.labels.length === 0) return
+    const camTrans = this.cameraObject ? this.cameraObject.getTransform() : null
+    const camPos = camTrans ? camTrans.getWorldPosition() : null
+
+    const survivors: CardLabel[] = []
+    for (const label of this.labels) {
+      if (!label.obj) continue
+      // Drop the label the instant the bubble begins morphing (progress leaves 0),
+      // not when it finishes opening.
+      if (label.card && label.card.getMorphProgress() > 0) {
+        label.obj.enabled = false
+        continue
+      }
+      if (camPos) {
+        const meters = label.cardTrans.getWorldPosition().distance(camPos) / 100
+        label.text.text = this.labelLine1 + "\n" + meters.toFixed(1) + " m"
+      }
+      survivors.push(label)
+    }
+    this.labels = survivors
   }
 
   // Configures a freshly-instantiated card: a closed bubble that expands on gaze
@@ -358,6 +459,45 @@ export class PingCardSpawner extends BaseScriptComponent {
     const imgs = this.placeholderImages
     if (!imgs || imgs.length === 0) return undefined
     return imgs[i % imgs.length]
+  }
+
+  // Draws a cylinder position whose direction-from-camera stays at least
+  // `minAngularSeparationDeg` away from every already-accepted card. Rejection
+  // sampling with a fixed budget: if no clear spot is found we keep the candidate
+  // that sat furthest from its nearest neighbour, so a packed wave still spawns.
+  private sampleSeparatedPosition(toWorld: mat4, camPos: vec3, acceptedDirs: vec3[]): vec3 {
+    if (this.minAngularSeparationDeg <= 0) {
+      return this.randomCylinderPosition()
+    }
+    const minCos = Math.cos((Math.min(180, this.minAngularSeparationDeg) * Math.PI) / 180)
+
+    let bestPos: vec3 = null
+    let bestDir: vec3 = null
+    let bestMaxDot = Infinity // smaller max-dot = further from the nearest neighbour
+
+    for (let attempt = 0; attempt < SEPARATION_MAX_ATTEMPTS; attempt++) {
+      const localPos = this.randomCylinderPosition()
+      const dir = toWorld.multiplyPoint(localPos).sub(camPos).normalize()
+
+      let maxDot = -Infinity
+      for (const d of acceptedDirs) {
+        const dot = dir.dot(d)
+        if (dot > maxDot) maxDot = dot
+      }
+
+      if (maxDot <= minCos) {
+        acceptedDirs.push(dir)
+        return localPos
+      }
+      if (maxDot < bestMaxDot) {
+        bestMaxDot = maxDot
+        bestPos = localPos
+        bestDir = dir
+      }
+    }
+
+    acceptedDirs.push(bestDir)
+    return bestPos
   }
 
   // Scatter within a vertical "pipe": a ring in the XZ plane between the inner
