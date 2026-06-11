@@ -11843,6 +11843,7 @@
     maxCps: true
     tailCps: true
     lingerSeconds: true
+    silenceWipeSeconds: true
     enableLogging: true
   ScriptTypesDefault:
     {}
@@ -11857,6 +11858,7 @@
       maxCps: !<float> 55.000000
       tailCps: !<float> 28.000000
       lingerSeconds: 1.200000
+      silenceWipeSeconds: !<float> 5.000000
       enableLogging: false
   ScriptTypes:
     "":
