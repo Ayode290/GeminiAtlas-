@@ -129,6 +129,9 @@
     homeDepth: true
     cardPadUp: true
     cardPopOut: true
+    orbRadiusCm: true
+    subtitleGapCm: true
+    subtitleFovMarginCm: true
     moveSpeed: true
     rotateSpeed: true
     idleBob: true
@@ -147,6 +150,9 @@
       cardPadRight: !<float> 2.000000
       cardPadUp: !<float> 3.000000
       cardPopOut: !<float> 2.000000
+      orbRadiusCm: !<float> 3.000000
+      subtitleGapCm: 1.500000
+      subtitleFovMarginCm: !<float> 3.000000
       moveSpeed: !<float> 4.000000
       rotateSpeed: !<float> 4.000000
       idleBob: 0.400000
