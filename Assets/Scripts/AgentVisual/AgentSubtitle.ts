@@ -87,6 +87,10 @@ export class AgentSubtitle extends BaseScriptComponent {
   @hint("Seconds the finished caption lingers before it clears.")
   lingerSeconds: number = 1.2
 
+  @input
+  @hint("Backstop: wipe the caption after this many seconds of total agent silence, even if the normal linger clear didn't fire (e.g. a stuck audio schedule).")
+  silenceWipeSeconds: number = 5
+
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
   @input
@@ -101,6 +105,8 @@ export class AgentSubtitle extends BaseScriptComponent {
   private revealed = 0         // float count of chars revealed from `accumulated`
   private displayStart = 0     // first char index shown (front of the 2-line window)
   private idleAfterDone = 0    // seconds since fully revealed + silent (for linger clear)
+  private silentSeconds = 0    // seconds with no new text and no audibly-draining audio
+  private lastSpeakSecs = 0    // previous frame's speakingSecondsRemaining (stuck detection)
 
   // Calibration: local-space height of a 2-line block at scale 1 (font-dependent).
   private twoLineLocalH = 0
@@ -147,6 +153,7 @@ export class AgentSubtitle extends BaseScriptComponent {
     }
     this.accumulated += fragment
     this.idleAfterDone = 0
+    this.silentSeconds = 0
     this.logger.info("pushText (+" + fragment.length + ") -> len " + this.accumulated.length)
   }
 
@@ -172,6 +179,7 @@ export class AgentSubtitle extends BaseScriptComponent {
     this.revealed = 0
     this.displayStart = 0
     this.idleAfterDone = 0
+    this.silentSeconds = 0
   }
 
   /** Buffered speech still to be heard (the clock we pace the typewriter against). */
@@ -224,6 +232,23 @@ export class AgentSubtitle extends BaseScriptComponent {
         cps = this.tailCps
       }
       this.revealed = Math.min(this.accumulated.length, this.revealed + cps * dt)
+    }
+
+    // Silence watchdog: wipe after `silenceWipeSeconds` of total agent silence,
+    // regardless of reveal state. "Speaking" requires the audio schedule to be
+    // positive AND actively draining — a schedule frozen above zero (the way a
+    // caption gets stuck forever) counts as silence; real playback drains every
+    // frame, so long replies are never wiped mid-utterance.
+    const speakSecs = this.speakingSecondsRemaining()
+    const audiblySpeaking = speakSecs > 0 && Math.abs(speakSecs - this.lastSpeakSecs) > 1e-6
+    this.lastSpeakSecs = speakSecs
+    if (this.accumulated.length > 0) {
+      this.silentSeconds = audiblySpeaking ? 0 : this.silentSeconds + dt
+      if (this.silentSeconds >= this.silenceWipeSeconds) {
+        this.logger.info("silence watchdog wiped the caption (" + this.silenceWipeSeconds + "s)")
+        this.clear()
+        return
+      }
     }
 
     // Linger then clear once everything is revealed and the agent is silent.

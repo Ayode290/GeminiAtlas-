@@ -34,6 +34,7 @@
     maxCps: false
     minCps: false
     sidePadCm: false
+    silenceWipeSeconds: false
     subtitleText: false
     tailCps: false
   ScriptTypesHidden:
@@ -54,6 +55,7 @@
       maxCps: !<float> 55.000000
       tailCps: !<float> 28.000000
       lingerSeconds: 1.200000
+      silenceWipeSeconds: !<float> 5.000000
       enableLogging: false
   ScriptTypes:
     -
@@ -75,6 +77,7 @@
     - '// @input float maxCps = 55 {"hint":"Fastest reveal speed (chars/sec); caps how quickly a backlog is flushed."}'
     - '// @input float tailCps = 28 {"hint":"Reveal speed (chars/sec) for the tail once the audio has drained."}'
     - '// @input float lingerSeconds = 1.2 {"hint":"Seconds the finished caption lingers before it clears."}'
+    - "// @input float silenceWipeSeconds = 5 {\"hint\":\"Backstop: wipe the caption after this many seconds of total agent silence, even if the normal linger clear didn't fire (e.g. a stuck audio schedule).\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - // @input bool enableLogging
