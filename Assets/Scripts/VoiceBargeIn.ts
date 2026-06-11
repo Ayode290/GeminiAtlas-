@@ -49,5 +49,7 @@ export function handleBargeIn(
   } catch (e) {}
   // Stop the orb "talking" immediately (it has its own ~20s scheduled envelope).
   (global as any).agentSphere?.interruptAudio?.();
+  // Wipe the live caption too, so it doesn't keep typing a sentence we cut off.
+  (global as any).agentSubtitle?.clear?.();
   return true;
 }

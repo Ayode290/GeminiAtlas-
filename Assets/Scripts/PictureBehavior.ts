@@ -313,7 +313,7 @@ export class PictureBehavior extends BaseScriptComponent {
   }
 
   /**
-   * Returns this card's top-right corner and basis vectors so the AgentSphere can
+   * Returns this card's top-left corner and basis vectors so the AgentSphere can
    * perch on its periphery. The crop corners (circleTrans) hold the captured
    * rectangle and stop updating once processImage() removes the update loop, so
    * they remain stable for the life of the card. Corners: [0]=TL [1]=TR [2]=BR [3]=BL.
@@ -326,7 +326,10 @@ export class PictureBehavior extends BaseScriptComponent {
     const up = tr.sub(br).normalize()
     // right x up points toward the camera (matches picAnchor's forward column).
     const normal = right.cross(up).normalize()
-    return {corner: tr, right, up, normal}
+    // World-space card dimensions so the AgentSubtitle can cap its width to the card.
+    const width = tr.sub(tl).length
+    const height = tr.sub(br).length
+    return {corner: tl, right, up, normal, width, height}
   }
 
   /**

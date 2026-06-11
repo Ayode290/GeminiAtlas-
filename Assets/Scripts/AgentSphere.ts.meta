@@ -36,11 +36,14 @@
     homeScreenPos: false
     idleBob: false
     moveSpeed: false
+    orbRadiusCm: false
     panelDepth: false
     panelScreenPos: false
     rotateSpeed: false
     speakPulse: false
     sphereObj: false
+    subtitleFovMarginCm: false
+    subtitleGapCm: false
   ScriptTypesHidden:
     {}
   ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
@@ -59,6 +62,9 @@
       cardPadRight: !<float> 3.000000
       cardPadUp: !<float> 3.000000
       cardPopOut: !<float> 2.000000
+      orbRadiusCm: !<float> 3.000000
+      subtitleGapCm: 1.500000
+      subtitleFovMarginCm: !<float> 3.000000
       moveSpeed: !<float> 4.000000
       rotateSpeed: !<float> 4.000000
       idleBob: 0.400000
@@ -78,13 +84,18 @@
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Placement (fraction of half-FOV: x -1=left..+1=right, y -1=bottom..+1=top)</span>"}'
     - '// @input vec2 panelScreenPos = {0.5,0.5} {"hint":"Panel state: top-right of the FOV (in front of the panel), matching the card-perch corner. Lower magnitudes pull it toward center if the device crops it."}'
     - '// @input float panelDepth = 120 {"hint":"Distance (cm) for the panel state. The interest panel sits ~140cm out; keep this a bit in front of it."}'
-    - '// @input vec2 homeScreenPos = {0.55,-0.55} {"hint":"Home state: bottom-right of the FOV. Lower magnitudes keep it more centered / safely on-screen."}'
+    - '// @input vec2 homeScreenPos = {-0.55,-0.55} {"hint":"Home state: bottom-left of the FOV. Lower magnitudes keep it more centered / safely on-screen."}'
     - '// @input float homeDepth = 55 {"hint":"Distance (cm) for the home state."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Perch offsets (cm — shared by the card and panel top-right corner)</span>"}'
     - '// @input float cardPadRight = 3 {"hint":"How far past the right edge to sit."}'
     - '// @input float cardPadUp = 3 {"hint":"How far above the top edge to sit."}'
     - '// @input float cardPopOut = 3 {"hint":"How far to pop out toward the viewer off the surface plane (keeps the orb in front of the card / panel)."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Subtitle</span>"}'
+    - '// @input float orbRadiusCm = 3 {"hint":"Orb ring radius (cm) — fallback only; auto-read from the AgentRing on the sphere object when present. One subtitle line = half the orb height."}'
+    - '// @input float subtitleGapCm = 1.5 {"hint":"Gap (cm) between the orb (home) or card bottom edge and the subtitle."}'
+    - "// @input float subtitleFovMarginCm = 3 {\"hint\":\"Margin (cm) kept between the subtitle's right edge and the FOV edge in home state.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Motion</span>"}'
     - '// @input float moveSpeed = 4 {"hint":"Position follow speed (lerp factor = moveSpeed * dt). Lower = lazier, laggier follow."}'

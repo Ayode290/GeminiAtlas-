@@ -6,11 +6,12 @@
  * faces the user, and travels to wherever the agent's attention currently is. State
  * is pushed in by the other scripts (no import coupling) through global.agentSphere:
  *
- *   - panel : perched on the interest panel's top-right corner (initial, at launch).
- *   - home  : bottom-right of the user's FOV (after "Start exploring", and while the
- *             NudgeVoice is speaking).
- *   - card  : the peripheral (top-right) corner of the card the CardVoiceAgent is
- *             currently talking about.
+ *   - home  : bottom-left of the user's FOV. The default everywhere except an active
+ *             card (launch, after "Start exploring", while the NudgeVoice speaks, etc.).
+ *   - card  : the top-left corner of the card the CardVoiceAgent is currently talking
+ *             about.
+ *   - panel : (legacy) perched on the interest panel's corner. No longer entered —
+ *             home covers the panel now — kept only so goPanel()/getPanelFrame compile.
  *
  * Every frame the orb eases toward an FOV-relative or card-relative target computed
  * from the head camera, so it naturally follows the user's gaze. It also gently bobs
@@ -19,6 +20,7 @@
  * Registered at global.agentSphere (mirrors global.cardVoiceAgent / cropInterestStore).
  */
 import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
+import { AgentRing } from "./AgentVisual/AgentRing";
 
 type SphereState = "panel" | "home" | "card";
 
@@ -60,8 +62,8 @@ export class AgentSphere extends BaseScriptComponent {
   panelDepth: number = 120
 
   @input
-  @hint("Home state: bottom-right of the FOV. Lower magnitudes keep it more centered / safely on-screen.")
-  homeScreenPos: vec2 = new vec2(0.55, -0.55)
+  @hint("Home state: bottom-left of the FOV. Lower magnitudes keep it more centered / safely on-screen.")
+  homeScreenPos: vec2 = new vec2(-0.55, -0.55)
 
   @input
   @hint("Distance (cm) for the home state.")
@@ -80,6 +82,20 @@ export class AgentSphere extends BaseScriptComponent {
   @input
   @hint("How far to pop out toward the viewer off the surface plane (keeps the orb in front of the card / panel).")
   cardPopOut: number = 3
+
+  @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Subtitle</span>')
+  @input
+  @hint("Orb ring radius (cm) — fallback only; auto-read from the AgentRing on the sphere object when present. One subtitle line = half the orb height.")
+  orbRadiusCm: number = 3
+
+  @input
+  @hint("Gap (cm) between the orb (home) or card bottom edge and the subtitle.")
+  subtitleGapCm: number = 1.5
+
+  @input
+  @hint("Margin (cm) kept between the subtitle's right edge and the FOV edge in home state.")
+  subtitleFovMarginCm: number = 3
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Motion</span>')
@@ -117,8 +133,10 @@ export class AgentSphere extends BaseScriptComponent {
   private camComp: Camera | null = null
   private sphereTrans: Transform
   private baseScale: vec3
+  // Orb world half-height (= one subtitle line slot), computed once at startup.
+  private orbHalfHeightCm = 3
 
-  private state: SphereState = "panel"
+  private state: SphereState = "home"
   // The PictureBehavior of the card we're perched on (duck-typed: has getCardFrame()).
   private activeCard: any = null
   // Smoothed current pose, seeded (snapped) on the first update.
@@ -160,6 +178,14 @@ export class AgentSphere extends BaseScriptComponent {
     }
     this.sphereTrans = this.sphereObj.getTransform();
     this.baseScale = this.sphereTrans.getLocalScale();
+
+    // Orb world half-height = one subtitle line (so two lines == the orb's height).
+    // Read the ring radius from the AgentRing on the sphere object when present;
+    // localScale == baseScale right now, so the world scale is the un-pulsed size.
+    let radius = this.orbRadiusCm;
+    const ring = this.sphereObj.getComponent(AgentRing.getTypeName()) as any;
+    if (ring && typeof ring.radius === "number" && ring.radius > 0) radius = ring.radius;
+    this.orbHalfHeightCm = radius * this.sphereTrans.getWorldScale().x;
 
     this.createEvent("UpdateEvent").bind(() => this.update(getDeltaTime()));
   }
@@ -214,6 +240,11 @@ export class AgentSphere extends BaseScriptComponent {
   /** Smoothed amplitude envelope (0..1) for visuals (read by AgentRing). */
   getAudioLevel(): number {
     return this.audioLevel;
+  }
+
+  /** Buffered speech (seconds) still to be played — AgentSubtitle paces its reveal on this. */
+  getSpeakingSecondsRemaining(): number {
+    return Math.max(0, this.scheduledSeconds);
   }
 
   /**
@@ -317,9 +348,47 @@ export class AgentSphere extends BaseScriptComponent {
     const normal =
       frame.normal ?? this.camTrans.getWorldPosition().sub(frame.corner).normalize();
     return frame.corner
-      .add(frame.right.uniformScale(this.cardPadRight))
+      .sub(frame.right.uniformScale(this.cardPadRight))
       .add(frame.up.uniformScale(this.cardPadUp))
       .add(normal.uniformScale(this.cardPopOut));
+  }
+
+  /**
+   * Positions the shared AgentSubtitle (global.agentSubtitle) for this frame: always
+   * a head-billboarded ribbon to the RIGHT of the orb, vertically centered on it —
+   * wherever the orb currently is (its home corner, or perched on a card). The width
+   * is capped to stay inside the FOV at the orb's actual depth, and further clamped to
+   * the card's width when perched on a card so the text never overruns the card.
+   * `lineHeightCm` is half the orb height, so a 2-line caption equals the orb.
+   */
+  private driveSubtitle(): void {
+    const sub = (global as any).agentSubtitle;
+    if (!sub || typeof sub.place !== "function") return;
+
+    const rot = quat.lookAt(this.camTrans.forward, vec3.up());
+    const orbPos = this.currentPos ?? this.fovPoint(this.homeScreenPos, this.homeDepth);
+
+    // Project the orb into the camera frame so the FOV width cap is correct for any
+    // orb position/depth (home corner or card perch), not just the home placement.
+    const camPos = this.camTrans.getWorldPosition();
+    const viewDir = this.camTrans.forward.uniformScale(-1);
+    const toOrb = orbPos.sub(camPos);
+    const depth = Math.max(1, toOrb.dot(viewDir));
+    const offsetRight = toOrb.dot(this.camTrans.right);
+    const fovHalfW = depth * Math.tan(this.fovRad() * 0.5) * this.aspect();
+
+    const start = offsetRight + this.orbHalfHeightCm + this.subtitleGapCm;
+    const pos = orbPos.add(this.camTrans.right.uniformScale(this.orbHalfHeightCm + this.subtitleGapCm));
+    let widthCm = Math.max(10, fovHalfW - start - this.subtitleFovMarginCm);
+    // On a card, keep the orb-relative position but cap the ribbon to the card's
+    // width so the text wraps within the card instead of running far past its edges.
+    if (this.state === "card" && this.activeCard?.getCardFrame) {
+      const f = this.activeCard.getCardFrame();
+      if (f && typeof f.width === "number" && f.width > 0) {
+        widthCm = Math.min(widthCm, f.width);
+      }
+    }
+    sub.place(pos, rot, this.orbHalfHeightCm, widthCm, "left", "center");
   }
 
   private update(dt: number): void {
@@ -351,6 +420,9 @@ export class AgentSphere extends BaseScriptComponent {
 
     this.sphereTrans.setWorldPosition(this.currentPos);
     this.sphereTrans.setWorldRotation(this.currentRot);
+
+    // Position the live caption relative to wherever the orb is now.
+    this.driveSubtitle();
 
     // Advance the amplitude envelope by playback time: target is the loudness of
     // the frame currently playing (0 once the schedule drains), eased fast up /
