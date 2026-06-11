@@ -1,5 +1,12 @@
 /**
- * MultiplayerTriviaManager.ts — v2.6
+ * MultiplayerTriviaManager.ts — v2.7
+ *
+ * Changes from v2.6:
+ *   - Sync store is now created UNOWNED (claimOwnership=false). Previously the
+ *     store was owned by whichever client created it first — a race unrelated to
+ *     the session host. When the guest won that race, the host could not write
+ *     the store, so host-authoritative updates (e.g. the ready count) silently
+ *     failed to reach the guest. Unowned lets the host's writes always propagate.
  *
  * Changes from v2.5:
  *   - Answer markers are now created by the script at runtime (no Text inputs).
@@ -291,7 +298,13 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
         this.readyCountProp,
         this.countdownStartTokenProp,
       ]),
-      true, 'Session', gameNetworkId
+      // claimOwnership=false → the store is created UNOWNED. With ownership the
+      // store is owned by whichever device creates it first (a race that does NOT
+      // track the session host); a non-owning host can't write, so its synced
+      // updates are silently dropped (e.g. ready count stuck on the guest). An
+      // unowned store lets every device send+receive, and since only the host
+      // writes synced props, the host's writes always propagate with no conflict.
+      false, 'Session', gameNetworkId
     )
 
     // ── Wire roast callback — fires when HTTP response arrives ────────────────
