@@ -1301,12 +1301,14 @@ export class CardDeckController extends BaseScriptComponent {
       .add(vec3.up().uniformScale(-sgn * vMag))
       .add(this.resultRowFaceForward.uniformScale(aC * depthStep))
 
-    // Fold about the HORIZONTAL axis: top card tilts toward the bottom, bottom toward
-    // the top — same magnitude profile as the horizontal deck's about-up fold. The sign
-    // is empirical on device; coverInvertFold flips it.
+    // Fold about the HORIZONTAL axis into a concave gallery: the top card leans back so its
+    // BOTTOM edge tucks toward the centre, the bottom card leans forward so its TOP edge tucks
+    // in — both side cards angling inward (not a conveyor belt). Negate sgn to match the
+    // horizontal deck's about-up convention. The sign is empirical on device; coverInvertFold
+    // flips it.
     const foldSign = this.coverInvertFold ? 1 : -1
     const foldMag = a <= 1 ? foldStart * a : Math.min(maxFold, foldStart + (a - 1) * foldStep)
-    const targetRot = quat.angleAxis(sgn * foldSign * foldMag * DEG2RAD, this.resultRowRight)
+    const targetRot = quat.angleAxis(-sgn * foldSign * foldMag * DEG2RAD, this.resultRowRight)
       .multiply(this.resultRowFaceRot)
 
     const worldScale = centerSize * Math.max(minFrac, Math.pow(falloff, a))
