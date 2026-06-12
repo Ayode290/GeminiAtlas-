@@ -217,8 +217,12 @@ export class CardDeckController extends BaseScriptComponent {
   searchSpinMultiplier: number = 3.5
 
   @input
-  @hint("Distance (cm) in front of the camera the result deck is placed. Keep this CLOSER than the plane so results read in front.")
+  @hint("HORIZONTAL CoverFlow: distance (cm) in front of the camera the result row is placed. Keep this CLOSER than the plane so results read in front.")
   resultRowDepthCm: number = 45
+
+  @input
+  @hint("VERTICAL browse deck: distance (cm) in front of the camera the column is placed. Independent of the horizontal row's depth.")
+  resultRowDepthVerticalCm: number = 100
 
   @input
   @hint("Vertical offset (cm) of the result row relative to the camera's eye line (positive = up).")
@@ -227,6 +231,10 @@ export class CardDeckController extends BaseScriptComponent {
   @input
   @hint("Uniform WORLD SCALE the CENTRED result card renders at; side cards shrink from this. (Overrides each card's varied deck size; restored when it returns to the cosmos.)")
   resultCardSize: number = 0.5
+
+  @input
+  @hint("Horizontal CoverFlow: every card is re-sized to this uniform IMAGE WIDTH (cm) while in the deck (height follows the image aspect), so the varied cosmos sizes don't show. Restored to its cosmos width on return. 0 = keep each card's cosmos width.")
+  coverHorizontalImageWidthCm: number = 3
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">CoverFlow (result navigation)</span>')
@@ -281,6 +289,10 @@ export class CardDeckController extends BaseScriptComponent {
   @input
   @hint("Vertical browse deck: resting tilt (deg) of the top/bottom card. Steep so it foreshortens into a peeking sliver (Cover Flow look).")
   coverVFoldDeg: number = 65
+
+  @input
+  @hint("Vertical browse deck: every card is re-sized to this uniform IMAGE HEIGHT (cm) while in the deck; the width is computed from the image aspect (width = height x aspect) since size is assigned by width. Restored to its cosmos width on return. 0 = keep each card's cosmos width.")
+  coverVerticalImageHeightCm: number = 4
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -980,6 +992,32 @@ export class CardDeckController extends BaseScriptComponent {
     return y * 365 + (m - 1) * 31 + d
   }
 
+  // --- Front-deck size standardization ----------------------------------------
+
+  // While a card is in a front deck we override its varied cosmos image width with a
+  // uniform deck size, so the CoverFlow reads as a tidy stack rather than mixed sizes.
+  // Sizing is always assigned via image WIDTH; the vertical deck derives that width from
+  // a target HEIGHT using the image aspect. Restored to the cosmos width on return.
+
+  // Horizontal CoverFlow: every card to one uniform image width.
+  private applyHorizontalDeckSize(slot: DeckSlot): void {
+    if (!slot || !slot.card) return
+    if (this.coverHorizontalImageWidthCm > 0) slot.card.setImageWidth(this.coverHorizontalImageWidthCm)
+  }
+
+  // Vertical browse: every card to one uniform image HEIGHT (width = height * aspect).
+  private applyVerticalDeckSize(slot: DeckSlot): void {
+    if (!slot || !slot.card) return
+    const h = this.coverVerticalImageHeightCm
+    if (h > 0) slot.card.setImageWidth(h * slot.card.getImageAspect())
+  }
+
+  // Returns a card to its varied cosmos image width when it leaves a front deck.
+  private restoreCosmosCardSize(slot: DeckSlot): void {
+    if (!slot || !slot.card) return
+    if (this.cardImageWidthCm > 0) slot.card.setImageWidth(this.cardImageWidthCm * slot.sizeScale)
+  }
+
   // --- External drive (CardQueryVoiceAgent) ----------------------------------
 
   /** Speeds the gentle sway up (or back) to signal the agent is searching. */
@@ -987,11 +1025,11 @@ export class CardDeckController extends BaseScriptComponent {
     this.searchActive = active
   }
 
-  // Snapshots a frozen, level world frame in front of the camera that the front deck
-  // (horizontal CoverFlow or vertical browse) is laid out on, so it stays put in the
-  // world instead of following the head. Flattens the look dir, mirroring
-  // buildWrappedLayout's Fh/rightN basis. Needs the camera; no-ops without it.
-  private snapshotResultFrame(): void {
+  // Snapshots a frozen, level world frame `depthCm` in front of the camera that the front
+  // deck (horizontal CoverFlow or vertical browse) is laid out on, so it stays put in the
+  // world instead of following the head. Each mode passes its own depth. Flattens the look
+  // dir, mirroring buildWrappedLayout's Fh/rightN basis. Needs the camera; no-ops without it.
+  private snapshotResultFrame(depthCm: number): void {
     if (!this.camTrans) return
     const camPos = this.camTrans.getWorldPosition()
     const look = this.camTrans.forward.uniformScale(-1) // camera looks along -forward
@@ -999,7 +1037,7 @@ export class CardDeckController extends BaseScriptComponent {
     const f = fFlat.length > 1e-3 ? fFlat.normalize() : new vec3(0, 0, -1)
     this.resultRowRight = vec3.up().cross(f).normalize()
     this.resultRowAnchor = camPos
-      .add(f.uniformScale(this.resultRowDepthCm))
+      .add(f.uniformScale(depthCm))
       .add(vec3.up().uniformScale(this.resultRowRiseCm))
     // Side cards recede along f (away from the user); the centred card faces back
     // toward the user along -f. Freeze that facing so the deck stays world-stable.
@@ -1038,12 +1076,13 @@ export class CardDeckController extends BaseScriptComponent {
 
     // Snapshot the deck's world frame ONCE from the camera's current pose so it stays
     // put in the world (it must not follow the head).
-    if (this.resultsActive) this.snapshotResultFrame()
+    if (this.resultsActive) this.snapshotResultFrame(this.num(this.resultRowDepthCm, 45))
 
     for (const idx of indices) {
       const slot = this.slots[idx]
       slot.isResult = true
       slot.renderOrder = -1 // force the first layout frame to push the distance-based order
+      this.applyHorizontalDeckSize(slot) // uniform width across the row
       if (slot.card) slot.card.setRenderInFront(true) // already expanded; scale eased per-frame
     }
     this.logger.info(
@@ -1116,6 +1155,7 @@ export class CardDeckController extends BaseScriptComponent {
       const slot = this.slots[idx]
       if (!slot) continue
       slot.isResult = false
+      this.restoreCosmosCardSize(slot) // back to its varied cosmos width
       this.applyWorldScale(slot, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (slot.card) slot.card.setRenderInFront(false)
     }
@@ -1136,7 +1176,7 @@ export class CardDeckController extends BaseScriptComponent {
     if (slotIndex < 0 || slotIndex >= this.slots.length) return
     if (this.slots.length < 3) return                     // a 3-card deck is impossible
 
-    this.snapshotResultFrame()
+    this.snapshotResultFrame(this.num(this.resultRowDepthVerticalCm, 100))
 
     const pair = this.topTwoNeighbours(slotIndex)
     const above = pair[0]
@@ -1149,6 +1189,7 @@ export class CardDeckController extends BaseScriptComponent {
       if (!s) continue
       s.isResult = true
       s.renderOrder = -1 // force the first layout frame to push the distance-based order
+      this.applyVerticalDeckSize(s) // uniform height across the column
       if (s.card) s.card.setRenderInFront(true)
     }
 
@@ -1246,6 +1287,7 @@ export class CardDeckController extends BaseScriptComponent {
     if (inc) {
       inc.isResult = true
       inc.renderOrder = -1
+      this.applyVerticalDeckSize(inc) // match the column's uniform height
       if (inc.card) inc.card.setRenderInFront(true)
       this.seedIncomingAtEdge(pick, sign < 0)
     }
@@ -1258,6 +1300,7 @@ export class CardDeckController extends BaseScriptComponent {
     const inc = this.slots[this.vIncoming]
     if (inc) {
       inc.isResult = false
+      this.restoreCosmosCardSize(inc) // back to its varied cosmos width
       this.applyWorldScale(inc, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (inc.card) inc.card.setRenderInFront(false)
     }
@@ -1291,6 +1334,7 @@ export class CardDeckController extends BaseScriptComponent {
     const out = this.slots[outgoing]
     if (out) {
       out.isResult = false
+      this.restoreCosmosCardSize(out) // back to its varied cosmos width
       this.applyWorldScale(out, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (out.card) out.card.setRenderInFront(false)
     }
@@ -1332,6 +1376,7 @@ export class CardDeckController extends BaseScriptComponent {
       const s = this.slots[idx]
       if (!s) continue
       s.isResult = false
+      this.restoreCosmosCardSize(s) // back to its varied cosmos width
       this.applyWorldScale(s, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (s.card) s.card.setRenderInFront(false)
     }

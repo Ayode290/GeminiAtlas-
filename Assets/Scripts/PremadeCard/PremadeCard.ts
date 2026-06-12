@@ -236,6 +236,15 @@ export class PremadeCard extends BaseScriptComponent {
     if (this.started) this.relayoutContent()
   }
 
+  /**
+   * The current image's aspect ratio (width / height), or 1 when no image / a
+   * degenerate texture. Lets a caller size by HEIGHT (width = height * aspect)
+   * since the card is sized via setImageWidth().
+   */
+  getImageAspect(): number {
+    return this.imageAspect()
+  }
+
   /** Sets the caption text and re-wraps + re-fits around it. */
   setText(text: string): void {
     this.currentText = text
