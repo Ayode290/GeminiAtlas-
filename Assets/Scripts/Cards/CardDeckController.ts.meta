@@ -31,8 +31,8 @@
     cardDistanceCm: false
     cardGapCm: false
     cardHeightCm: false
+    cardImageWidthCm: false
     cardPrefab: false
-    cardSizeBase: false
     cardSizeMaxScale: false
     cardSizeMinScale: false
     cardWidthCm: false
@@ -89,7 +89,7 @@
       verticalCenterRiseCm: !<float> 15.000000
       canvasHeightCm: !<float> 220.000000
       cardGapCm: !<float> 6.000000
-      cardSizeBase: 0.300000
+      cardImageWidthCm: !<float> 3.000000
       cardSizeMinScale: 0.650000
       cardSizeMaxScale: 1.600000
       cardWidthCm: !<float> 26.000000
@@ -138,15 +138,15 @@
     - '// @input SceneObject centerObject {"hint":"Fallback anchor for the plane when no GlobeView is set."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Wrap placement (cylinder around the head)</span>"}'
-    - "// @input float cardDistanceCm {\"hint\":\"Radius (cm) of the cylinder the cards wrap on = how far the cards are from your head. 0 = auto (the globe's distance). Cards have a minimum on-screen size, so DISTANCE is the real 'make them smaller' knob — push this out to shrink them.\"}"
+    - "// @input float cardDistanceCm {\"hint\":\"Radius (cm) of the cylinder the cards wrap on = how far the cards are from your head. 0 = auto (the globe's distance). Independent of card size now — size is the image width below; push this out to move the whole field farther away.\"}"
     - '// @input float verticalCenterRiseCm = 20 {"hint":"How far (cm) ABOVE the globe top the field is vertically centred."}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Cylinder wall (wraps around the head, above the globe)</span>"}'
     - '// @input float canvasHeightCm = 20 {"hint":"Fixed HEIGHT (cm) of the cylinder-wall band. Vertical extent is fixed; cards spread sideways as needed to avoid overlap."}'
     - "// @input float cardGapCm {\"hint\":\"Extra spacing (cm) kept between cards on top of each card's REAL measured footprint. THE spacing knob now — raise it to spread cards apart, 0 = cards packed just shy of touching.\"}"
-    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Card size = uniform WORLD SCALE of the whole card (predictable; bypasses the prefab x10 ImageAnchor + parent scale).</span>"}'
-    - '// @input float cardSizeBase = 0.3 {"hint":"Overall card size — the world scale applied to a scale-1 card. THE size knob. Smaller = smaller cards. NOTE: set this in the Inspector (editing the code default does nothing once the component is in the scene)."}'
-    - '// @input float cardSizeMinScale = 0.3 {"hint":"Smallest per-card size multiplier (variety). Each card picks a random scale between this and the max."}'
-    - '// @input float cardSizeMaxScale = 1 {"hint":"Largest per-card size multiplier (variety)."}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #94A3B8; font-size: 11px;\">Card size = the displayed IMAGE WIDTH; the picture, caption wrap, and auto-fit border all follow from it. The card root stays at its authored scale (no root shrinking).</span>"}'
+    - "// @input float cardImageWidthCm = 3 {\"hint\":\"Base displayed image width for each card; height follows the image aspect, and the caption + auto-fit border size around it. THE size knob (smaller = smaller cards). The prefab's ImageAnchor scales the picture ~10x, so the on-screen card is larger than this raw number. Each card varies by its random multiplier (min/max below). NOTE: set this in the Inspector (editing the code default does nothing once the component is in the scene).\"}"
+    - '// @input float cardSizeMinScale = 0.3 {"hint":"Smallest per-card size multiplier (variety): multiplies the base image width. Each card picks a random factor between this and the max."}'
+    - '// @input float cardSizeMaxScale = 1 {"hint":"Largest per-card size multiplier (variety): multiplies the base image width."}'
     - "// @input float cardWidthCm = 10 {\"hint\":\"FALLBACK card footprint WIDTH (cm), used only for a card that hasn't measured its real size (e.g. border auto-fit off). Measured cards ignore this.\"}"
     - "// @input float cardHeightCm = 15 {\"hint\":\"FALLBACK card footprint HEIGHT (cm), used only for a card that hasn't measured its real size. Measured cards ignore this.\"}"
     - '// @ui {"widget":"separator"}'

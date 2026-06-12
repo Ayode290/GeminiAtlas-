@@ -42,10 +42,7 @@
   ScriptAsset: !<reference> 56fa1134-87f2-4aed-9ce5-acb4e424450e
   ScriptInputsDefault:
     cardHeadings: true
-    rowDepthCm: true
     rowRiseCm: true
-    cardSpacingCm: true
-    cardSize: true
     flyInDuration: true
     selectHoldSeconds: true
     arrowLifetimeSeconds: true
@@ -69,10 +66,10 @@
         - -40.000000
         - 0.000000
         - 40.000000
-      rowDepthCm: !<float> 60.000000
+      rowDepthCm: !<float> 200.000000
       rowRiseCm: !<float> 0.000000
-      cardSpacingCm: !<float> 22.000000
-      cardSize: 0.500000
+      cardSpacingCm: !<float> 60.000000
+      cardImageWidthCm: !<float> 5.000000
       flyInDuration: 0.800000
       selectHoldSeconds: !<float> 3.000000
       arrowLifetimeSeconds: !<float> 10.000000

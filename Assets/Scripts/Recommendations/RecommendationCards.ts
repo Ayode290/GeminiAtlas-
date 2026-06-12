@@ -94,8 +94,8 @@ export class RecommendationCards extends BaseScriptComponent {
   cardSpacingCm: number = 22
 
   @input
-  @hint("World scale applied to each card.")
-  cardSize: number = 0.5
+  @hint("Displayed image width (cm) for each card. The picture, caption wrap, auto-fit border, and collider all flow from this — the card stays at world scale 1. (This is the correct knob for a premade card; do NOT scale the whole card.)")
+  cardImageWidthCm: number = 13.3
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Timing (seconds)</span>')
@@ -191,9 +191,11 @@ export class RecommendationCards extends BaseScriptComponent {
       .add(vec3.up().uniformScale(this.rowRiseCm))
 
     // Cards start clustered further away (along the view dir), then fly in by
-    // POSITION ONLY. Scale stays fixed at cardSize the whole time: animating scale
-    // during the fly-in corrupts PremadeCard's auto-fit border measurement (it
-    // measures a few frames after layout), which made the caption overflow the card.
+    // POSITION ONLY. World scale stays at 1 the whole time — card size is driven
+    // by PremadeCard.imageWidth (cm), so the picture, caption wrap, auto-fit
+    // border, and collider all measure in real cm. Animating scale during the
+    // fly-in corrupts the auto-fit border measurement (it measures a few frames
+    // after layout), which made the caption overflow the card.
     const startPos = camPos.add(viewDir.uniformScale(this.rowDepthCm + 35))
     const parent = this.getSceneObject()
 
@@ -207,9 +209,9 @@ export class RecommendationCards extends BaseScriptComponent {
       obj.layer = parent.layer
       const trans = obj.getTransform()
 
-      // Spawn at the final scale + fixed rotation BEFORE the card's onStart lays out
-      // its caption, so the border auto-fit measures at steady state.
-      trans.setWorldScale(new vec3(this.cardSize, this.cardSize, this.cardSize))
+      // Keep the card at world scale 1 + a fixed rotation BEFORE the card's onStart
+      // lays out its caption, so the border auto-fit measures at steady state in cm.
+      trans.setWorldScale(vec3.one())
       trans.setWorldPosition(startPos)
       trans.setWorldRotation(faceRot)
 
@@ -219,6 +221,9 @@ export class RecommendationCards extends BaseScriptComponent {
         card.gazeToExpand = false
         card.startExpanded = true
         card.setCamera(this.cameraObject)
+        // Drive size via the image width (cm). onStart's relayout reads this field,
+        // so set it before the card lays out and measures its border.
+        card.setImageWidth(this.cardImageWidthCm)
         const tex = this.cardImages && this.cardImages[i] ? this.cardImages[i] : null
         if (tex) card.setImage(tex)
         card.setText(RECOMMENDATION_TEXTS[i])
@@ -291,7 +296,7 @@ export class RecommendationCards extends BaseScriptComponent {
     for (let i = 0; i < this.cards.length; i++) {
       if (i === index) continue
       const rec = this.cards[i]
-      this.tweenScale(rec, this.cardSize, 0, 0.3, "ease-in-quad", () => this.destroyObj(rec.obj))
+      this.tweenScale(rec, rec.trans.getWorldScale().x, 0, 0.3, "ease-in-quad", () => this.destroyObj(rec.obj))
     }
 
     // Hold, then turn the chosen card into the arrow.
@@ -459,13 +464,18 @@ export class RecommendationCards extends BaseScriptComponent {
   // Explicit-size box collider + Interactable on the card ROOT so a point-and-pinch
   // selects it. Mirrors CardDeckController.makeCardSelectable: fitVisual=false with a
   // real size, because auto-fit on a nested-scale card yields a box the SIK ray misses.
-  // The size is in root-local units (root world scale gives the world footprint).
+  // The card sits at world scale 1, so this box is sized in real cm: a rough cover
+  // derived from the image width (the fly-in settle re-fits it to the measured
+  // footprint via resizeCollider). Picture ≈ image width; caption hangs below, so the
+  // box is ~2× wide and ~3× tall, matching the old proportions.
   private makeSelectable(obj: SceneObject, index: number): void {
     if (!obj) return
     if (!obj.getComponent("Physics.ColliderComponent")) {
       const collider = obj.createComponent("Physics.ColliderComponent") as ColliderComponent
       const shape = Shape.createBoxShape()
-      shape.size = new vec3(28, 40, 6)
+      const w = this.cardImageWidthCm * 2
+      const h = this.cardImageWidthCm * 3
+      shape.size = new vec3(w, h, Math.max(2, w * 0.1))
       collider.shape = shape
       collider.fitVisual = false
     }

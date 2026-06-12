@@ -9,7 +9,7 @@
     - 37eb8dc0-9362-4ca2-b1d5-57c01cc62962: 37eb8dc0-9362-4ca2-4e2a-a83fe339d69d
     - e7b52a9e-f5dd-4015-8790-60b287ada456: e7b52a9e-f5dd-4015-786f-9f4d78525ba9
   Name: CardDeck
-  Enabled: true
+  Enabled: false
   Layers: 1
   LocalTransform: !<TransformEntity>
     Position: {x: 0.000000, y: 0.000000, z: 0.000000}
@@ -27,10 +27,8 @@
   Enabled: true
   ScriptAsset: !<reference> 6c013ed9-5070-426e-96d9-7da4cc246ac0
   ScriptInputsDefault:
-    placeholderImages: true
     centerObject: true
-    cardDistanceCm: true
-    cardSizeBase: true
+    cardImageWidthCm: true
     topicWeight: true
     locationWeight: true
     dateWeight: true
@@ -67,17 +65,53 @@
     "":
       cardPrefab: !<reference.ObjectPrefab> 02b4824a-47d6-4142-adfd-202c4493d953
       placeholderImages: !<reference.Texture[]>
-        []
+        - !<reference> 33591c84-f8a6-4ed1-9399-4921692bf63b
+        - !<reference> 3f898d79-47b5-433d-b787-b0682f49d8d5
+        - !<reference> 685bed1e-0e37-44ab-ac95-f85a937cfd60
+        - !<reference> a72a2a3b-2e5f-4c52-8712-fc1665525938
+        - !<reference> c5a86411-37e4-40a2-99ca-3556af4669c4
+        - !<reference> 3e5e42f8-215b-4071-940e-57ed3d0956fe
+        - !<reference> cd5350db-e6b9-49b8-ba3b-43f29f32691c
+        - !<reference> 915f02a9-1183-4490-aa9c-d7da1079627d
+        - !<reference> 351c44c0-7832-4614-a14b-a7069f50a98a
+        - !<reference> afe2dc7b-2b9e-426a-865d-6c0f4b24654c
+        - !<reference> 89d86f77-9725-4a64-95ec-40892e1339b7
+        - !<reference> fb8809b0-3a09-4ab2-96a7-8627047d66a1
+        - !<reference> efa87b07-e7ac-4f50-a98b-83f59aa2058b
+        - !<reference> 38cad1e4-a651-4f04-bbbc-1446ff4b71bf
+        - !<reference> e002ff82-a78d-4b63-aef6-ef2292684449
+        - !<reference> fd566e70-69b9-404a-a7db-eda42b1782f4
+        - !<reference> 54e2837c-edc8-490b-8306-86b2aaa53897
+        - !<reference> faa81c8d-6844-4a5e-b64b-2017125d87fc
+        - !<reference> 575a12c3-51bc-4b5c-a744-002c1500a05c
+        - !<reference> ecd429a6-1614-4280-bc6d-84e1c72b8d0a
+        - !<reference> 3198c0f6-7779-4277-bead-f3002feb68b0
+        - !<reference> 639d7a9f-80bf-41a9-a29f-8c9dcb5317d2
+        - !<reference> 78fab250-e49d-4f73-9197-0a5533d3369c
+        - !<reference> 57ce7eab-3b83-47a2-87dc-2dff8abbeae5
+        - !<reference> c7f0192f-e70b-4ac4-8360-bee7a6d8e7be
+        - !<reference> 2e9a450a-c8b8-4b30-b84b-31e2d7e039f3
+        - !<reference> 7811c0b7-77c7-41f0-8506-a87f5adf0e7b
+        - !<reference> d6c6c014-5762-43d5-bb8b-a00e9313442e
+        - !<reference> c47d2bb0-a422-4fca-bde7-89c19984c5a4
+        - !<reference> 18a1a5ee-0777-43b2-a5ed-9859f72f46b9
+        - !<reference> e387e1af-4ce6-4310-8edb-2fb26fe394f7
+        - !<reference> cc190a86-4c1a-45aa-b96a-ee9188f7b038
+        - !<reference> 81b6b445-9805-44f0-8eb4-c94c20432fb4
+        - !<reference> 639b2209-d60c-4e11-be66-0458ee3539ee
+        - !<reference> 8581ca1f-7bfa-4d38-b7ab-1d8a7e0fd1e2
+        - !<reference> 00b8dbce-6fa7-4d4b-b476-9710692c5576
+        - !<reference> f1de37c3-2e08-43ca-ab7e-2c06dcf2cf94
       cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       globeView: !<MappingBased.AssignableType> 1537e6de-5cfe-42ea-873c-8c8719a6f4a4
       centerObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      cardDistanceCm: !<float> 0.000000
+      cardDistanceCm: !<float> 200.000000
       verticalCenterRiseCm: !<float> 20.000000
-      canvasHeightCm: !<float> 20.000000
+      canvasHeightCm: !<float> 80.000000
       cardGapCm: !<float> 0.000000
-      cardSizeBase: 0.300000
+      cardImageWidthCm: !<float> 3.000000
       cardSizeMinScale: 0.300000
-      cardSizeMaxScale: !<float> 1.000000
+      cardSizeMaxScale: !<float> 3.000000
       cardWidthCm: !<float> 10.000000
       cardHeightCm: !<float> 15.000000
       topicWeight: 0.700000

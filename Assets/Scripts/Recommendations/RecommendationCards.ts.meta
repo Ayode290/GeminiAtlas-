@@ -35,9 +35,9 @@
     arrowYawOffsetDeg: false
     cameraObject: false
     cardHeadings: false
+    cardImageWidthCm: false
     cardImages: false
     cardPrefab: false
-    cardSize: false
     cardSpacingCm: false
     enableLogging: false
     flyInDuration: false
@@ -65,7 +65,7 @@
       rowDepthCm: !<float> 60.000000
       rowRiseCm: !<float> 0.000000
       cardSpacingCm: !<float> 22.000000
-      cardSize: 0.500000
+      cardImageWidthCm: 13.300000
       flyInDuration: 0.800000
       selectHoldSeconds: !<float> 3.000000
       arrowLifetimeSeconds: !<float> 10.000000
@@ -92,7 +92,7 @@
     - '// @input float rowDepthCm = 60 {"hint":"Distance (cm) in front of the user where the card row settles."}'
     - '// @input float rowRiseCm {"hint":"Vertical offset (cm) of the card row relative to eye level."}'
     - '// @input float cardSpacingCm = 22 {"hint":"Horizontal gap (cm) between adjacent cards in the row."}'
-    - '// @input float cardSize = 0.5 {"hint":"World scale applied to each card."}'
+    - '// @input float cardImageWidthCm = 13.3 {"hint":"Displayed image width (cm) for each card. The picture, caption wrap, auto-fit border, and collider all flow from this — the card stays at world scale 1. (This is the correct knob for a premade card; do NOT scale the whole card.)"}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Timing (seconds)</span>"}'
     - '// @input float flyInDuration = 0.8 {"hint":"Fly-in animation duration."}'

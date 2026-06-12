@@ -10,8 +10,9 @@
  * REST MODE: every card is ALWAYS expanded (never a bubble). The cards wrap on a
  * CYLINDER around the user's head at roughly the globe's distance, centred
  * slightly above the globe, spanning ~3x the camera FoV horizontally so the edge
- * cards sit off to the sides (you turn your head to see them). Sizes are angular
- * (degrees), so the on-screen size is independent of how close the cylinder is.
+ * cards sit off to the sides (you turn your head to see them). Each card's size is
+ * its displayed IMAGE WIDTH (cardImageWidthCm x a per-card variety multiplier); the
+ * cylinder DISTANCE is an independent knob.
  * Positions come from a relevance-clustered, non-overlapping layout (topic-
  * primary, location + date as tie-breakers) solved once in angular space. Each
  * card billboards individually to face the user and sways gently; nothing orbits.
@@ -51,10 +52,11 @@ import { CardRecord } from "./CardStore";
 
 const DEG2RAD = Math.PI / 180
 
-// A PremadeCard only composes correctly (image contained, caption below it) at its
-// AUTHORED root scale — exactly what the exploration cards (PingCardSpawner.popIn)
-// keep. So the deck renders every card at world scale 1 and gets its apparent size +
-// spacing from the cylinder DISTANCE instead of from shrinking the card root.
+// A PremadeCard composes correctly (image contained, caption below it, border auto-fit
+// around both) at its AUTHORED root scale — exactly what PingCardSpawner.popIn keeps. So
+// the deck never shrinks the card root: every card stays at world scale 1, and its size is
+// set the supported way, via setImageWidth() (the picture, caption wrap, and border all
+// follow). The cylinder DISTANCE is then an independent knob.
 const AUTHORED_WORLD_SCALE = 1
 
 /** Per-card state for the flat-plane layout. */
@@ -116,7 +118,7 @@ export class CardDeckController extends BaseScriptComponent {
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Wrap placement (cylinder around the head)</span>')
   @input
-  @hint("Radius (cm) of the cylinder the cards wrap on = how far the cards are from your head. 0 = auto (the globe's distance). Cards have a minimum on-screen size, so DISTANCE is the real 'make them smaller' knob — push this out to shrink them.")
+  @hint("Radius (cm) of the cylinder the cards wrap on = how far the cards are from your head. 0 = auto (the globe's distance). Independent of card size now — size is the image width below; push this out to move the whole field farther away.")
   cardDistanceCm: number = 0
 
   @input
@@ -132,17 +134,17 @@ export class CardDeckController extends BaseScriptComponent {
   @hint("Extra spacing (cm) kept between cards on top of each card's REAL measured footprint. THE spacing knob now — raise it to spread cards apart, 0 = cards packed just shy of touching.")
   cardGapCm: number = 0
 
-  @ui.label('<span style="color: #94A3B8; font-size: 11px;">Card size = uniform WORLD SCALE of the whole card (predictable; bypasses the prefab x10 ImageAnchor + parent scale).</span>')
+  @ui.label('<span style="color: #94A3B8; font-size: 11px;">Card size = the displayed IMAGE WIDTH; the picture, caption wrap, and auto-fit border all follow from it. The card root stays at its authored scale (no root shrinking).</span>')
   @input
-  @hint("Overall card size — the world scale applied to a scale-1 card. THE size knob. Smaller = smaller cards. NOTE: set this in the Inspector (editing the code default does nothing once the component is in the scene).")
-  cardSizeBase: number = 0.3
+  @hint("Base displayed image width for each card; height follows the image aspect, and the caption + auto-fit border size around it. THE size knob (smaller = smaller cards). The prefab's ImageAnchor scales the picture ~10x, so the on-screen card is larger than this raw number. Each card varies by its random multiplier (min/max below). NOTE: set this in the Inspector (editing the code default does nothing once the component is in the scene).")
+  cardImageWidthCm: number = 3
 
   @input
-  @hint("Smallest per-card size multiplier (variety). Each card picks a random scale between this and the max.")
+  @hint("Smallest per-card size multiplier (variety): multiplies the base image width. Each card picks a random factor between this and the max.")
   cardSizeMinScale: number = 0.3
 
   @input
-  @hint("Largest per-card size multiplier (variety).")
+  @hint("Largest per-card size multiplier (variety): multiplies the base image width.")
   cardSizeMaxScale: number = 1.0
 
   @input
@@ -404,6 +406,9 @@ export class CardDeckController extends BaseScriptComponent {
         if (this.cameraObject) card.setCamera(this.cameraObject)
         const tex = this.placeholderImageFor(i)
         if (tex) card.setImage(tex)
+        // Size the card the supported way: set its image width (picture + caption +
+        // auto-fit border all follow). sizeScale gives per-card size variety.
+        if (this.cardImageWidthCm > 0) card.setImageWidth(this.cardImageWidthCm * sizeScale)
         card.setText(entry.text)
         // Stay invisible (but keep measuring) until buildWrappedLayout has sized +
         // placed this card, so the deck never flashes huge unpositioned cards.
@@ -521,6 +526,8 @@ export class CardDeckController extends BaseScriptComponent {
       card.startExpanded = true
       if (this.cameraObject) card.setCamera(this.cameraObject)
       if (rec.image) card.setImage(rec.image)
+      // Size by image width (see spawnDeck); sizeScale gives per-card variety.
+      if (this.cardImageWidthCm > 0) card.setImageWidth(this.cardImageWidthCm * sizeScale)
       card.setText(rec.text)
       // Hidden until the next layout sizes + places it (see spawnDeck).
       card.hideUntilReady()
@@ -549,9 +556,9 @@ export class CardDeckController extends BaseScriptComponent {
     if (!obj.getComponent("Physics.ColliderComponent")) {
       const collider = obj.createComponent("Physics.ColliderComponent") as ColliderComponent
       const shape = Shape.createBoxShape()
-      // Provisional root-local size from the fallback footprint (world / worldScale).
-      const base = this.cardSizeBase > 1e-4 ? this.cardSizeBase : 0.3
-      shape.size = new vec3(this.cardWidthCm / base, this.cardHeightCm / base, 4)
+      // Provisional root-local size from the fallback footprint. Cards sit at world
+      // scale 1, so root-local units equal world cm; refined to the measured size later.
+      shape.size = new vec3(this.cardWidthCm, this.cardHeightCm, 4)
       collider.shape = shape
       collider.fitVisual = false
     }
@@ -697,11 +704,9 @@ export class CardDeckController extends BaseScriptComponent {
     const Fh = horizDist > 1e-3 ? fhFlat.normalize() : new vec3(0, 0, -1)
     const rightRaw = vec3.up().cross(Fh)
     const rightN = rightRaw.length > 1e-3 ? rightRaw.normalize() : new vec3(1, 0, 0)
-    // Cards now render at full authored size (~30 cm), not a ~0.15 shrink, so push the
-    // cylinder out by the same factor to keep a comfortable on-screen angular size.
-    const distScale = 1 / Math.max(0.05, this.cardSizeBase)
-    const autoDist = this.cardDistanceCm > 0 ? this.cardDistanceCm : Math.max(1, horizDist)
-    const R = autoDist * distScale
+    // Card size is driven by each card's image width, not by shrinking the root, so the
+    // cylinder radius is simply the requested distance (no hidden size-coupled multiplier).
+    const R = this.cardDistanceCm > 0 ? this.cardDistanceCm : Math.max(1, horizDist)
     const centerH = fieldCenter.y - head.y // band-centre height relative to the head
 
     // Basis for the gentle in-place sway.
@@ -713,8 +718,8 @@ export class CardDeckController extends BaseScriptComponent {
     const parentScale = this.getSceneObject().getTransform().getWorldScale()
 
     // Per-card footprint radius (cm) from each card's REAL measured size; band
-    // half-height (cm). The world footprint is the card's measured root-local
-    // size times the world scale we apply below (cardSizeBase * sizeScale).
+    // half-height (cm). Every card sits at world scale 1, so its measured root-local
+    // size IS its world footprint (per-card image width already baked the variety in).
     // Cards that haven't measured fall back to the authored cardWidth/HeightCm.
     const radius: number[] = []
     let sumR = 0
@@ -736,9 +741,7 @@ export class CardDeckController extends BaseScriptComponent {
       radius.push(r); sumR += r
     }
     const avgR = n > 0 ? sumR / n : 10
-    // Band scales with the distance bump so the full-size cards sit in the same
-    // angular strip the old shrunk cards did.
-    const halfV = Math.max(10, this.canvasHeightCm * 0.5) * distScale
+    const halfV = Math.max(10, this.canvasHeightCm * 0.5)
 
     // Seed a wide, centre-dense ellipse (cm) + similarity matrix.
     const u: number[] = [] // horizontal arc-length, cm
@@ -826,7 +829,7 @@ export class CardDeckController extends BaseScriptComponent {
     this.logger.info(
       "[layout] cards=" + n +
       " R=" + R.toFixed(0) + "cm band=" + (maxU - minU).toFixed(0) + "x" + (halfV * 2).toFixed(0) + "cm" +
-      " cardSizeBase(in)=" + this.cardSizeBase +
+      " cardImageWidthCm(in)=" + this.cardImageWidthCm +
       " cardDistanceCm(in)=" + this.cardDistanceCm +
       " parentScale=" + parentScale.x.toFixed(2) + "/" + parentScale.y.toFixed(2) + "/" + parentScale.z.toFixed(2) +
       " card0WorldScale=" + card0Scale.toFixed(3) +
@@ -1039,7 +1042,7 @@ export class CardDeckController extends BaseScriptComponent {
       const slot = this.slots[idx]
       if (!slot) continue
       slot.isResult = false
-      this.applyWorldScale(slot, this.cardSizeBase * slot.sizeScale) // back to deck size
+      this.applyWorldScale(slot, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (slot.card) slot.card.setRenderInFront(false)
     }
   }
@@ -1181,7 +1184,7 @@ export class CardDeckController extends BaseScriptComponent {
     const inc = this.slots[this.vIncoming]
     if (inc) {
       inc.isResult = false
-      this.applyWorldScale(inc, this.cardSizeBase * inc.sizeScale)
+      this.applyWorldScale(inc, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (inc.card) inc.card.setRenderInFront(false)
     }
     this.vIncoming = -1
@@ -1214,7 +1217,7 @@ export class CardDeckController extends BaseScriptComponent {
     const out = this.slots[outgoing]
     if (out) {
       out.isResult = false
-      this.applyWorldScale(out, this.cardSizeBase * out.sizeScale)
+      this.applyWorldScale(out, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (out.card) out.card.setRenderInFront(false)
     }
 
@@ -1234,7 +1237,7 @@ export class CardDeckController extends BaseScriptComponent {
   private seedIncomingAtEdge(slotIndex: number, fromTop: boolean): void {
     const slot = this.slots[slotIndex]
     if (!slot) return
-    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
+    const centerSize = this.num(this.resultCardSize, 0.5)
     const cardH = this.verticalCardHeight(slot, centerSize)
     const depthStep = this.num(this.coverDepthStepCm, 6)
     const off = (fromTop ? 1 : -1) * cardH * (this.num(this.coverVGapFrac, 0.5) + this.num(this.coverVStepFrac, 0.6))
@@ -1255,7 +1258,7 @@ export class CardDeckController extends BaseScriptComponent {
       const s = this.slots[idx]
       if (!s) continue
       s.isResult = false
-      this.applyWorldScale(s, this.cardSizeBase * s.sizeScale) // back to deck size
+      this.applyWorldScale(s, AUTHORED_WORLD_SCALE) // back to the resting (authored) scale
       if (s.card) s.card.setRenderInFront(false)
     }
     this.verticalSlots = []
@@ -1279,8 +1282,7 @@ export class CardDeckController extends BaseScriptComponent {
       const h = slot.card.getContentLocalSize().y * worldScale
       if (h > 1e-3 && isFinite(h)) return h
     }
-    const base = this.cardSizeBase > 1e-4 ? this.cardSizeBase : 0.3
-    return this.cardHeightCm * worldScale / base
+    return this.cardHeightCm * worldScale
   }
 
   // Vertical analogue of layoutResultSlot: lays the 3 cards along the up axis and folds
@@ -1300,7 +1302,7 @@ export class CardDeckController extends BaseScriptComponent {
     // sliver. Offsets are a FRACTION of the centred card's height (self-scaling vs card size)
     // so the cards always overlap into a deck instead of floating apart; the fold is steep so
     // each side card foreshortens into that sliver.
-    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
+    const centerSize = this.num(this.resultCardSize, 0.5)
     const cardH = this.verticalCardHeight(slot, centerSize)
     const centerGap = cardH * this.num(this.coverVGapFrac, 0.5)
     const sideSpacing = cardH * this.num(this.coverVStepFrac, 0.6)
@@ -1417,7 +1419,7 @@ export class CardDeckController extends BaseScriptComponent {
     const falloff = this.num(this.coverSideScaleFalloff, 0.82)
     const minFrac = this.num(this.coverMinScaleFrac, 0.4)
     const maxVis = this.num(this.coverMaxVisiblePerSide, 6)
-    const centerSize = this.num(this.resultCardSize, this.cardSizeBase)
+    const centerSize = this.num(this.resultCardSize, 0.5)
 
     const r = k - this.scrubPos          // signed offset from centre (<0 left, >0 right)
     const a = Math.abs(r)

@@ -3355,10 +3355,7 @@
   ScriptAsset: !<reference> 56fa1134-87f2-4aed-9ce5-acb4e424450e
   ScriptInputsDefault:
     cardHeadings: true
-    rowDepthCm: true
     rowRiseCm: true
-    cardSpacingCm: true
-    cardSize: true
     flyInDuration: true
     selectHoldSeconds: true
     arrowLifetimeSeconds: true
@@ -3382,10 +3379,10 @@
         - -40.000000
         - 0.000000
         - 40.000000
-      rowDepthCm: !<float> 60.000000
+      rowDepthCm: !<float> 120.000000
       rowRiseCm: !<float> 0.000000
-      cardSpacingCm: !<float> 22.000000
-      cardSize: 0.500000
+      cardSpacingCm: !<float> 35.000000
+      cardImageWidthCm: 2.750000
       flyInDuration: 0.800000
       selectHoldSeconds: !<float> 3.000000
       arrowLifetimeSeconds: !<float> 10.000000
@@ -7888,8 +7885,6 @@
   ScriptAsset: !<reference> 6c013ed9-5070-426e-96d9-7da4cc246ac0
   ScriptInputsDefault:
     centerObject: true
-    cardDistanceCm: true
-    cardSizeBase: true
     topicWeight: true
     locationWeight: true
     dateWeight: true
@@ -7966,13 +7961,13 @@
       cameraObject: !<reference.SceneObject> 00000000-0000-0065-0000-000000000064
       globeView: !<MappingBased.AssignableType> 1537e6de-5cfe-42ea-873c-8c8719a6f4a4
       centerObject: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
-      cardDistanceCm: !<float> 0.000000
+      cardDistanceCm: !<float> 500.000000
       verticalCenterRiseCm: !<float> 20.000000
-      canvasHeightCm: !<float> 20.000000
+      canvasHeightCm: !<float> 175.000000
       cardGapCm: !<float> 0.000000
-      cardSizeBase: 0.300000
-      cardSizeMinScale: 0.300000
-      cardSizeMaxScale: !<float> 1.000000
+      cardImageWidthCm: 2.500000
+      cardSizeMinScale: 0.600000
+      cardSizeMaxScale: 1.750000
       cardWidthCm: !<float> 10.000000
       cardHeightCm: !<float> 15.000000
       topicWeight: 0.700000
@@ -8341,7 +8336,7 @@
       padding: !<float> 1.000000
       cornerRadius: !<float> 2.000000
       rectLineWidth: 0.400000
-      numPoints: !<float> 32.000000
+      numPoints: !<float> 20.000000
       fillOpacity: !<float> 1.000000
       backOffset: -0.300000
       enableLogging: false

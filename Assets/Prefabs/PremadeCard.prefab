@@ -223,7 +223,7 @@
       defaultText: "This is an example caption for a premade card. This is an example caption for a premade card. "
       borderColor: !<Vec4> {x: 1.000000, y: 1.000000, z: 1.000000, w: 1.000000}
       autoFitBorder: true
-      borderPadding: 1.200000
+      borderPadding: !<float> 1.000000
       backOffset: -0.300000
       startExpanded: false
       morphDuration: 0.500000
@@ -291,6 +291,7 @@
   ScriptAsset: !<reference> ad2ee416-a16c-49b0-b7f3-bdf735031fde
   ScriptInputsDefault:
     color: true
+    rectLineWidth: true
     fillOpacity: true
     radius: true
     noiseScale: true
@@ -299,6 +300,7 @@
     undulateSpeed: true
     targetWidth: true
     targetHeight: true
+    targetCornerRadius: true
     progress: true
     enableLogging: true
     enableLoggingLifecycle: true
@@ -309,17 +311,17 @@
       baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
       color: !<Vec4> {x: 0.200000, y: 0.600000, z: 1.000000, w: 1.000000}
       innerFraction: 0.300000
-      rectLineWidth: 0.600000
+      rectLineWidth: 0.400000
       fillOpacity: 0.900000
       radius: !<float> 4.000000
       noiseScale: 0.480000
       distortion: !<float> 4.000000
-      numPoints: !<float> 32.000000
+      numPoints: !<float> 20.000000
       referenceRadius: !<float> 0.000000
       undulateSpeed: 0.150000
       targetWidth: !<float> 12.000000
       targetHeight: !<float> 8.000000
-      targetCornerRadius: !<float> 3.000000
+      targetCornerRadius: !<float> 2.000000
       progress: !<float> 0.000000
       enableLogging: false
       enableLoggingLifecycle: false
@@ -335,7 +337,7 @@
   LocalTransform: !<TransformEntity>
     Position: {x: -3.000000, y: 5.000000, z: 0.000000}
     Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.500000, y: 1.500000, z: 1.500000}
+    Scale: {x: 0.800000, y: 0.800000, z: 0.800000}
     HasSegmentScaleCompensation: false
   Children:
     - !<own> c1cc0091-0502-40e1-99ca-6288ff2e5396
