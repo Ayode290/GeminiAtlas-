@@ -287,6 +287,16 @@ export class BubbleMesh extends BaseScriptComponent {
     if (this.material) (this.material.mainPass as any).depthTest = !enabled
   }
 
+  /**
+   * Shows or hides the border by toggling its render visual. The component keeps
+   * ticking (so a caller can still drive the morph / re-fit the size while hidden);
+   * only the drawing is suppressed. Used to hold a card invisible until its deck has
+   * measured + placed it, avoiding a flash at the default transform.
+   */
+  setVisible(visible: boolean): void {
+    if (this.rmv) this.rmv.enabled = visible
+  }
+
   // The ring fill carries the bubble color with the fill-opacity multiplier
   // folded into its alpha.
   private fillColor(): vec4 {

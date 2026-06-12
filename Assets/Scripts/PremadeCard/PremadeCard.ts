@@ -150,6 +150,10 @@ export class PremadeCard extends BaseScriptComponent {
   // > 0 while a measure pass is pending. The text is laid out invisibly during
   // this window, so a collapsed card is measured without ever flashing.
   private measureCountdown = -1
+  // While true the card draws nothing (picture + border + caption suppressed) but
+  // still measures, so a deck can size + place it before it is ever shown. Cleared
+  // by reveal(). See hideUntilReady().
+  private hiddenUntilReady = false
   // Gaze dwell accumulator + precomputed cone cosine.
   private gazeTimer = 0
   private gazeCosThreshold = -1
@@ -241,6 +245,25 @@ export class PremadeCard extends BaseScriptComponent {
   /** The card's current caption text (for the voice agent / card buttons). */
   getText(): string {
     return this.currentText
+  }
+
+  /**
+   * Holds the card fully invisible (picture + border + caption) while it keeps
+   * measuring, so a deck can size + place it before it ever draws — avoiding a flash
+   * at the default transform. Call reveal() once the card is positioned. Safe before
+   * onStart: the flag is honoured when onStart establishes the base visibility.
+   */
+  hideUntilReady(): void {
+    this.hiddenUntilReady = true
+    if (this.started) this.applyContentVisibility(this.lastContentVisible)
+  }
+
+  /** Reveals a card held by hideUntilReady(), showing it at its current transform. */
+  reveal(): void {
+    if (!this.hiddenUntilReady) return
+    this.hiddenUntilReady = false
+    if (this.borderBubble) this.borderBubble.setVisible(true)
+    this.applyContentVisibility(this.morph ? this.morph.contentVisible : this.lastContentVisible)
   }
 
   /**
@@ -699,6 +722,15 @@ export class PremadeCard extends BaseScriptComponent {
   }
 
   private applyContentVisibility(visible: boolean): void {
+    if (this.hiddenUntilReady) {
+      // Held invisible until the deck has measured + placed this card. Keep the
+      // caption enabled-but-transparent (beginMeasure) so the text still lays out and
+      // getBoundingBox measures; suppress the picture + border entirely.
+      if (this.pictureVisual) this.pictureVisual.getSceneObject().enabled = false
+      if (this.borderBubble) this.borderBubble.setVisible(false)
+      if (this.caption) this.caption.beginMeasure()
+      return
+    }
     if (this.pictureVisual) this.pictureVisual.getSceneObject().enabled = visible
     if (this.caption) this.caption.setVisible(visible)
   }

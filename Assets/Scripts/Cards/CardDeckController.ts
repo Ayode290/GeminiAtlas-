@@ -51,6 +51,12 @@ import { CardRecord } from "./CardStore";
 
 const DEG2RAD = Math.PI / 180
 
+// A PremadeCard only composes correctly (image contained, caption below it) at its
+// AUTHORED root scale — exactly what the exploration cards (PingCardSpawner.popIn)
+// keep. So the deck renders every card at world scale 1 and gets its apparent size +
+// spacing from the cylinder DISTANCE instead of from shrinking the card root.
+const AUTHORED_WORLD_SCALE = 1
+
 /** Per-card state for the flat-plane layout. */
 interface DeckSlot {
   obj: SceneObject
@@ -399,6 +405,9 @@ export class CardDeckController extends BaseScriptComponent {
         const tex = this.placeholderImageFor(i)
         if (tex) card.setImage(tex)
         card.setText(entry.text)
+        // Stay invisible (but keep measuring) until buildWrappedLayout has sized +
+        // placed this card, so the deck never flashes huge unpositioned cards.
+        card.hideUntilReady()
         // Visual size is set in buildWrappedLayout (angular → world width at radius R).
       } else {
         this.logger.warn("Spawned card " + entry.id + " has no PremadeCard component.")
@@ -513,6 +522,8 @@ export class CardDeckController extends BaseScriptComponent {
       if (this.cameraObject) card.setCamera(this.cameraObject)
       if (rec.image) card.setImage(rec.image)
       card.setText(rec.text)
+      // Hidden until the next layout sizes + places it (see spawnDeck).
+      card.hideUntilReady()
     } else {
       this.logger.warn("Captured card " + rec.id + " has no PremadeCard component.")
     }
@@ -686,7 +697,11 @@ export class CardDeckController extends BaseScriptComponent {
     const Fh = horizDist > 1e-3 ? fhFlat.normalize() : new vec3(0, 0, -1)
     const rightRaw = vec3.up().cross(Fh)
     const rightN = rightRaw.length > 1e-3 ? rightRaw.normalize() : new vec3(1, 0, 0)
-    const R = this.cardDistanceCm > 0 ? this.cardDistanceCm : Math.max(1, horizDist)
+    // Cards now render at full authored size (~30 cm), not a ~0.15 shrink, so push the
+    // cylinder out by the same factor to keep a comfortable on-screen angular size.
+    const distScale = 1 / Math.max(0.05, this.cardSizeBase)
+    const autoDist = this.cardDistanceCm > 0 ? this.cardDistanceCm : Math.max(1, horizDist)
+    const R = autoDist * distScale
     const centerH = fieldCenter.y - head.y // band-centre height relative to the head
 
     // Basis for the gentle in-place sway.
@@ -705,8 +720,7 @@ export class CardDeckController extends BaseScriptComponent {
     let sumR = 0
     for (let i = 0; i < n; i++) {
       const slot = this.slots[i]
-      const s = slot.sizeScale
-      const worldScale = this.cardSizeBase * s
+      const worldScale = AUTHORED_WORLD_SCALE
       let w: number, h: number
       if (slot.card && slot.card.isContentMeasured()) {
         const ls = slot.card.getContentLocalSize()
@@ -715,14 +729,16 @@ export class CardDeckController extends BaseScriptComponent {
         // Refit the selection collider (root-local units) to the real footprint.
         this.resizeSelectCollider(slot.obj, ls.x, ls.y)
       } else {
-        w = this.cardWidthCm * s
-        h = this.cardHeightCm * s
+        w = this.cardWidthCm
+        h = this.cardHeightCm
       }
       const r = 0.5 * Math.sqrt(w * w + h * h) + this.cardGapCm * 0.5
       radius.push(r); sumR += r
     }
     const avgR = n > 0 ? sumR / n : 10
-    const halfV = Math.max(10, this.canvasHeightCm * 0.5)
+    // Band scales with the distance bump so the full-size cards sit in the same
+    // angular strip the old shrunk cards did.
+    const halfV = Math.max(10, this.canvasHeightCm * 0.5) * distScale
 
     // Seed a wide, centre-dense ellipse (cm) + similarity matrix.
     const u: number[] = [] // horizontal arc-length, cm
@@ -779,7 +795,7 @@ export class CardDeckController extends BaseScriptComponent {
     let minU = 0, maxU = 0
     for (let i = 0; i < n; i++) {
       const slot = this.slots[i]
-      const targetWorld = this.cardSizeBase * slot.sizeScale
+      const targetWorld = AUTHORED_WORLD_SCALE
       slot.trans.setLocalScale(new vec3(
         parentScale.x > 1e-4 ? targetWorld / parentScale.x : targetWorld,
         parentScale.y > 1e-4 ? targetWorld / parentScale.y : targetWorld,
@@ -796,6 +812,12 @@ export class CardDeckController extends BaseScriptComponent {
       if (u[i] > maxU) maxU = u[i]
     }
     this.layoutBuilt = true
+
+    // Every card is now sized + placed, so reveal any held invisible at spawn
+    // (hideUntilReady). Idempotent: already-visible cards are left as-is.
+    for (let i = 0; i < this.slots.length; i++) {
+      if (this.slots[i].card) this.slots[i].card.reveal()
+    }
 
     // Diagnostic: live inputs + resulting band footprint + a sample card.
     const c0 = this.slots[0]
