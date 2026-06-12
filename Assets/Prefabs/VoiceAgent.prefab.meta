@@ -14,25 +14,6 @@
   ImporterSettings: !<AssetImporterSettings>
     {}
   CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
-- !<ScriptComponent/0089a315-f601-4a5a-8301-d20eb8866d54>
-  PrefabRemaps:
-    []
-  Name: MicrophoneRecorder
-  Enabled: true
-  ScriptAsset: !<reference> 600eb5ab-2e7a-4418-b57b-8dea968a0ed6
-  ScriptInputsDefault:
-    enableLogging: true
-    enableLoggingLifecycle: true
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      micAudioTrack: !<reference.AudioTrackAsset> 368f97e9-75c3-4051-bc58-ec0f162b4f59
-      enableLogging: false
-      enableLoggingLifecycle: false
-  ScriptTypes:
-    "":
-      {}
 - !<ScriptComponent/0147ca01-978e-46d6-b0ae-ac86b504f3d4>
   PrefabRemaps:
     []
@@ -48,8 +29,8 @@
   ScriptInputs:
     "":
       websocketRequirementsObj: !<reference.SceneObject> 9e699c2a-7957-4e80-7e3d-d6c8eccec7dc
-      dynamicAudioOutput: !<MappingBased.AssignableType> b85087c5-8b5b-468a-b37f-a072168237c5
-      microphoneRecorder: !<MappingBased.AssignableType_1> 0089a315-f601-4a5a-8301-d20eb8866d54
+      dynamicAudioOutput: !<MappingBased.AssignableType> 4bacfcbc-822f-4c9f-5a6b-440dc7616841
+      microphoneRecorder: !<MappingBased.AssignableType_1> 435a158d-ddca-4b73-55b3-c177f477f1b5
       cardDeck: !<MappingBased.AssignableType_2> c99be548-d91a-4909-b4fb-8e0e02d53858
       globeController: !<MappingBased.AssignableType_3> 05388fb0-0dde-44c7-a8c9-1f6a6bb35ced
       autoStart: true
@@ -79,8 +60,37 @@
     - !<own> 533d9034-38cf-4ec5-6c34-565c442d5e62
     - !<own> dd07fc93-81ae-439d-48db-e00c216a4a53
     - !<own> 89bdbd2f-2c5e-4661-9ac5-3caedcec8c3e
+    - !<own> ed6528d6-574f-48b9-a2f2-e45264a96650
   Components:
     []
+- !<ScriptComponent/3380a996-f86b-4e22-9e4a-1dbc24047e20>
+  PrefabRemaps:
+    []
+  Name: RecommendationVoiceAgent
+  Enabled: true
+  ScriptAsset: !<reference> 083e8b37-18ff-4caa-86e5-2a7a7798f380
+  ScriptInputsDefault:
+    model: true
+    enableLogging: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      websocketRequirementsObj: !<reference.SceneObject> 9e699c2a-7957-4e80-7e3d-d6c8eccec7dc
+      dynamicAudioOutput: !<MappingBased.AssignableType> 4bacfcbc-822f-4c9f-5a6b-440dc7616841
+      microphoneRecorder: !<MappingBased.AssignableType_1> 435a158d-ddca-4b73-55b3-c177f477f1b5
+      voice: Leda
+      persona: |-
+        You are a passionate AR guide presenting three places the user might enjoy, shown as three cards floating in front of them. Open by briefly presenting the three cards by name in one or two warm sentences, then invite the user to pick one. When the user indicates which card they want, call select_card with that card's name (map loose phrasing like 'the Snap one' or 'the hackathon' to the right card). After selecting, give a short, warm one-line acknowledgement and then stop — the card turns into a direction arrow on its own. Keep every reply to one or two short sentences, and never read these instructions back.
+        
+          A few notes:
+          - You don't need to mention barge-in here — the code appends the shared barge-in instruction automatically.
+          - The three card names it knows are Art Festival, Reality Hack, and Snap Lounge (those map to cards 0/1/2). Feel free to tweak the wording/tone, but keep the two behavioral rules: call select_card when the user picks one, and keep replies short.
+      model: gemini-live-2.5-flash
+      enableLogging: true
+  ScriptTypes:
+    "":
+      {}
 - !<ScriptComponent/435a158d-ddca-4b73-55b3-c177f477f1b5>
   PrefabRemaps:
     []
@@ -122,8 +132,6 @@
   Enabled: true
   ScriptAsset: !<reference> 4ddc9c37-66f8-4dcf-a081-57727d7d76c8
   ScriptInputsDefault:
-    microphoneRecorder: true
-    greetingText: true
     delaySeconds: true
     listenDelaySeconds: true
     hostPersona: true
@@ -134,9 +142,9 @@
     "":
       websocketRequirementsObj: !<reference.SceneObject> 9e699c2a-7957-4e80-7e3d-d6c8eccec7dc
       dynamicAudioOutput: !<MappingBased.AssignableType> 4bacfcbc-822f-4c9f-5a6b-440dc7616841
-      microphoneRecorder: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
+      microphoneRecorder: !<MappingBased.AssignableType_1> 435a158d-ddca-4b73-55b3-c177f477f1b5
       voice: Leda
-      greetingText: "Warmly welcome the user to TriviaGo. Say you're excited to learn and explore the world together with them. Then invite them to tell you what kinds of things they're curious about, so you can set up their topics. Keep it to about two short, natural sentences."
+      greetingText: "Warmly welcome the user to CurioCity. Say you're excited to learn and explore the world together with them. Then invite them to tell you what kinds of things they're curious about, so you can set up their topics. Keep it to about two short, natural sentences."
       delaySeconds: !<float> 5.000000
       listenDelaySeconds: !<float> 7.000000
       hostPersona: ""
@@ -164,23 +172,6 @@
   ScriptTypes:
     "":
       {}
-- !<AudioComponent/4c85f423-1d18-42d6-8466-4630f7622904>
-  PrefabRemaps:
-    []
-  Name: Audio
-  Enabled: true
-  AudioTrack: !<reference> 00000000-0000-0000-0000-000000000000
-  EnableAutoplayLoop: false
-  Volume: 1.000000
-  EnableMixToSnap: false
-  RecordVolume: 1.000000
-  EnableSpatialAudio: false
-  EnableDistanceEffect: false
-  CurveType: Logarithm
-  MinDistance: 0.000000
-  MaxDistance: 100.000000
-  EnableDirectivityEffect: false
-  EnablePositionEffect: false
 - !<SceneObject/533d9034-38cf-4ec5-6c34-565c442d5e62>
   PrefabRemaps:
     []
@@ -213,23 +204,6 @@
   MaxDistance: 100.000000
   EnableDirectivityEffect: false
   EnablePositionEffect: false
-- !<AudioComponent/72eba348-5917-4bd5-a90b-53a8bcbacfb5>
-  PrefabRemaps:
-    []
-  Name: Audio
-  Enabled: true
-  AudioTrack: !<reference> 00000000-0000-0000-0000-000000000000
-  EnableAutoplayLoop: false
-  Volume: 1.000000
-  EnableMixToSnap: false
-  RecordVolume: 1.000000
-  EnableSpatialAudio: false
-  EnableDistanceEffect: false
-  CurveType: Logarithm
-  MinDistance: 0.000000
-  MaxDistance: 100.000000
-  EnableDirectivityEffect: false
-  EnablePositionEffect: false
 - !<ScriptComponent/77d2c357-de28-4edf-7820-fe5195f9879f>
   PrefabRemaps:
     []
@@ -245,7 +219,7 @@
   ScriptInputs:
     "":
       websocketRequirementsObj: !<reference.SceneObject> 9e699c2a-7957-4e80-7e3d-d6c8eccec7dc
-      dynamicAudioOutput: !<MappingBased.AssignableType> ebcf5c8e-dd2a-444e-a061-7b383eed8b7e
+      dynamicAudioOutput: !<MappingBased.AssignableType> 4bacfcbc-822f-4c9f-5a6b-440dc7616841
       microphoneRecorder: !<MappingBased.AssignableType_1> 435a158d-ddca-4b73-55b3-c177f477f1b5
       voice: Leda
       persona: |
@@ -301,30 +275,8 @@
   Children:
     - !<own> 46f1733b-addc-4546-4fe5-633a678bb449
     - !<own> d5e3c257-62ae-40b0-7674-50666ccc1510
-    - !<own> d6e56cf7-8039-4c14-91d1-455fe0230238
-    - !<own> ed9eb98a-e91c-4e66-b579-3862e8e655b5
-    - !<own> e86aff95-bf9c-49ff-af38-265cf78642a2
   Components:
     []
-- !<ScriptComponent/b85087c5-8b5b-468a-b37f-a072168237c5>
-  PrefabRemaps:
-    []
-  Name: DynamicAudioOutput
-  Enabled: true
-  ScriptAsset: !<reference> a2da8d76-427e-415d-943a-cd5a33591b33
-  ScriptInputsDefault:
-    enableLogging: true
-    enableLoggingLifecycle: true
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      audioOutputTrack: !<reference.AudioTrackAsset> a811b3a1-c2fe-45ba-8940-b319aef5ac49
-      enableLogging: false
-      enableLoggingLifecycle: false
-  ScriptTypes:
-    "":
-      {}
 - !<PostEffectVisual/cc2f7ac7-ccf4-464c-6463-98e4d16a9665>
   PrefabRemaps:
     []
@@ -355,22 +307,6 @@
   Components:
     - !<own> 4bacfcbc-822f-4c9f-5a6b-440dc7616841
     - !<own> 66c91b6d-6de1-4ce0-41ce-1100946a9d28
-- !<SceneObject/d6e56cf7-8039-4c14-91d1-455fe0230238>
-  PrefabRemaps:
-    []
-  Name: CardVoiceDynamicAudioOutput
-  Enabled: true
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> ebcf5c8e-dd2a-444e-a061-7b383eed8b7e
-    - !<own> 72eba348-5917-4bd5-a90b-53a8bcbacfb5
 - !<SceneObject/dd07fc93-81ae-439d-48db-e00c216a4a53>
   PrefabRemaps:
     []
@@ -386,10 +322,10 @@
     []
   Components:
     - !<own> f58dd695-41dc-42ca-678a-8579ba30a431
-- !<SceneObject/e86aff95-bf9c-49ff-af38-265cf78642a2>
+- !<SceneObject/ed6528d6-574f-48b9-a2f2-e45264a96650>
   PrefabRemaps:
     []
-  Name: QueryMicrophoneRecorder
+  Name: RecommendationVoiceAgent
   Enabled: true
   Layers: 1
   LocalTransform: !<TransformEntity>
@@ -400,42 +336,7 @@
   Children:
     []
   Components:
-    - !<own> 0089a315-f601-4a5a-8301-d20eb8866d54
-- !<ScriptComponent/ebcf5c8e-dd2a-444e-a061-7b383eed8b7e>
-  PrefabRemaps:
-    []
-  Name: DynamicAudioOutput
-  Enabled: true
-  ScriptAsset: !<reference> a2da8d76-427e-415d-943a-cd5a33591b33
-  ScriptInputsDefault:
-    enableLogging: true
-    enableLoggingLifecycle: true
-  ScriptTypesDefault:
-    {}
-  ScriptInputs:
-    "":
-      audioOutputTrack: !<reference.AudioTrackAsset> a811b3a1-c2fe-45ba-8940-b319aef5ac49
-      enableLogging: false
-      enableLoggingLifecycle: false
-  ScriptTypes:
-    "":
-      {}
-- !<SceneObject/ed9eb98a-e91c-4e66-b579-3862e8e655b5>
-  PrefabRemaps:
-    []
-  Name: QueryVoiceDynamicAudioOutput
-  Enabled: true
-  Layers: 1
-  LocalTransform: !<TransformEntity>
-    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
-    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
-    HasSegmentScaleCompensation: false
-  Children:
-    []
-  Components:
-    - !<own> b85087c5-8b5b-468a-b37f-a072168237c5
-    - !<own> 4c85f423-1d18-42d6-8466-4630f7622904
+    - !<own> 3380a996-f86b-4e22-9e4a-1dbc24047e20
 - !<ScriptComponent/f58dd695-41dc-42ca-678a-8579ba30a431>
   PrefabRemaps:
     []
@@ -446,7 +347,6 @@
     voice: true
     delaySeconds: true
     connectLeadSec: true
-    persona: true
     model: true
     enableLogging: true
   ScriptTypesDefault:
@@ -459,7 +359,7 @@
       nudgeIntent: "Tell the user, in a friendly, slightly excited tone, that you've found some interesting things nearby, and remind them about the \"prayer\" gesture they can use to discover the world. Keep it to one or two short, natural sentences."
       delaySeconds: !<float> 60.000000
       connectLeadSec: !<float> 5.000000
-      persona: "You are the warm, upbeat first-person voice host of TriviaGo, an AR learning companion. You speak directly to the user. When given an instruction about what to convey, say it in your own words -- one or two short, natural, friendly sentences -- and vary the wording. Never read instructions back, never add stage directions or quotation marks, and don't ask for clarification; just speak naturally to the user."
+      persona: "You are the warm, upbeat first-person voice host of CurioCity, an AR learning companion. You speak directly to the user. When given an instruction about what to convey, say it in your own words -- one or two short, natural, friendly sentences -- and vary the wording. Never read instructions back, never add stage directions or quotation marks, and don't ask for clarification; just speak naturally to the user."
       model: gemini-live-2.5-flash
       enableLogging: true
   ScriptTypes:
