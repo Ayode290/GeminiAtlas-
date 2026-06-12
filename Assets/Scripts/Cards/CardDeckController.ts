@@ -49,6 +49,7 @@ import { GlobeView } from "../Globe/GlobeView";
 import { PinchDragTracker } from "../Globe/PinchDragTracker";
 import { CARD_DECK_DATA, SEED_CARDS, CardDeckEntry } from "./cardDeckData";
 import { CardRecord } from "./CardStore";
+import { colorForTopics } from "../Interests/TopicColors";
 
 const DEG2RAD = Math.PI / 180
 
@@ -410,6 +411,8 @@ export class CardDeckController extends BaseScriptComponent {
         // auto-fit border all follow). sizeScale gives per-card size variety.
         if (this.cardImageWidthCm > 0) card.setImageWidth(this.cardImageWidthCm * sizeScale)
         card.setText(entry.text)
+        // Color the border by the card's primary topic (mirrors PingCardSpawner).
+        card.setBorderColor(colorForTopics(entry.topics))
         // Stay invisible (but keep measuring) until buildWrappedLayout has sized +
         // placed this card, so the deck never flashes huge unpositioned cards.
         card.hideUntilReady()
@@ -529,6 +532,8 @@ export class CardDeckController extends BaseScriptComponent {
       // Size by image width (see spawnDeck); sizeScale gives per-card variety.
       if (this.cardImageWidthCm > 0) card.setImageWidth(this.cardImageWidthCm * sizeScale)
       card.setText(rec.text)
+      // Color the border by the card's primary topic (mirrors PingCardSpawner).
+      card.setBorderColor(colorForTopics(entry.topics))
       // Hidden until the next layout sizes + places it (see spawnDeck).
       card.hideUntilReady()
     } else {
