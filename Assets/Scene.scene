@@ -4650,10 +4650,10 @@
       buttonSpacing: 0.100000
       shareCount: !<float> 5.000000
       sharePicSpacing: !<float> 1.000000
-      sideOffset: -0.600000
+      sideOffset: !<float> 0.000000
       verticalOffset: -0.300000
       forwardOffset: 0.600000
-      iconSize: 2.500000
+      iconSize: !<float> 3.000000
       iconForwardOffset: 0.200000
       labelSize: !<float> 45.000000
       labelOffset: 7.400000
@@ -7747,7 +7747,7 @@
       sideOffset: 1.200000
       verticalOffset: -1.500000
       forwardOffset: 0.600000
-      iconSize: 2.300000
+      iconSize: 2.700000
       iconForwardOffset: 0.200000
       labelSize: !<float> 45.000000
       labelOffset: 7.400000
