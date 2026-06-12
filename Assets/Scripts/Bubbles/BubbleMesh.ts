@@ -294,7 +294,9 @@ export class BubbleMesh extends BaseScriptComponent {
    * measured + placed it, avoiding a flash at the default transform.
    */
   setVisible(visible: boolean): void {
-    if (this.rmv) this.rmv.enabled = visible
+    // Skip a redundant write so toggling an already-correct visual never
+    // re-fires the RenderMeshVisual lifecycle (per-frame churn avoidance).
+    if (this.rmv && this.rmv.enabled !== visible) this.rmv.enabled = visible
   }
 
   // The ring fill carries the bubble color with the fill-opacity multiplier

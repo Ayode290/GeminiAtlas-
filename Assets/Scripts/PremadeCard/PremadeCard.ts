@@ -771,12 +771,20 @@ export class PremadeCard extends BaseScriptComponent {
       // Held invisible until the deck has measured + placed this card. Keep the
       // caption enabled-but-transparent (beginMeasure) so the text still lays out and
       // getBoundingBox measures; suppress the picture + border entirely.
-      if (this.pictureVisual) this.pictureVisual.getSceneObject().enabled = false
+      this.setPictureEnabled(false)
       if (this.borderBubble) this.borderBubble.setVisible(false)
       if (this.caption) this.caption.beginMeasure()
       return
     }
-    if (this.pictureVisual) this.pictureVisual.getSceneObject().enabled = visible
+    this.setPictureEnabled(visible)
     if (this.caption) this.caption.setVisible(visible)
+  }
+
+  // Toggles the picture visual's object, skipping the write when already in that
+  // state so a redundant call never re-fires the RenderMeshVisual lifecycle.
+  private setPictureEnabled(enabled: boolean): void {
+    if (!this.pictureVisual) return
+    const obj = this.pictureVisual.getSceneObject()
+    if (obj.enabled !== enabled) obj.enabled = enabled
   }
 }

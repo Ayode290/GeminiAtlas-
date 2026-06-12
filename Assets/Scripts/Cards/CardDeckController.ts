@@ -66,6 +66,13 @@ interface DeckSlot {
   card: PremadeCard
   trans: Transform
   entry: CardDeckEntry
+  // Stable index of this slot within `slots` (slots are append-only), cached so
+  // the per-frame CoverFlow/vertical layout never has to scan with indexOf.
+  index: number
+  // The card's tap-to-select Interactable (set in makeCardSelectable), disabled
+  // while a front deck is up so SIK doesn't spend per-frame targeting work on the
+  // ~37 cosmos cards that can't be selected then anyway.
+  interactable: Interactable | null
   // Per-card random size multiplier (variety); scales the angular size + footprint.
   sizeScale: number
   // Settled angular position on the cylinder (degrees): azimuth + elevation.
@@ -163,8 +170,8 @@ export class CardDeckController extends BaseScriptComponent {
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Gaze focus (cards near your view centre grow)</span>')
   @input
-  @hint("Grow resting cards that fall within a cone around the camera's view centre, biggest at the centre.")
-  gazeScaleEnabled: boolean = true
+  @hint("Grow resting cards that fall within a cone around the camera's view centre, biggest at the centre. Default OFF: when on, resting cards continuously ease their root scale as the gaze cone passes over them, which re-fires each card's layout/measure pass every frame (a large CPU cost).")
+  gazeScaleEnabled: boolean = false
 
   @input
   @hint("Half-angle (degrees) of the gaze cone around the view centre. Cards inside it grow; cards outside stay at their resting size.")
@@ -304,6 +311,14 @@ export class CardDeckController extends BaseScriptComponent {
   private logger: Logger
   private slots: DeckSlot[] = []
   private camTrans: Transform = null
+  // This object's transform, cached once (parent of every card slot).
+  private selfTrans: Transform = null
+  // Per-frame caches recomputed at the top of update(): the shared billboard
+  // rotation (every card faces the camera the same way) and the parent world
+  // scale (used to convert target world scales to local). Computing these once
+  // instead of per slot removes ~37 quat.lookAt + getWorldScale calls per frame.
+  private frameBillboardRot: quat | null = null
+  private frameParentScale: vec3 | null = null
 
   // Premade deck + seeds are spawned exactly once (in onStart, which fires the
   // first frame this scene is switched on).
@@ -388,6 +403,7 @@ export class CardDeckController extends BaseScriptComponent {
   }
 
   private onStart(): void {
+    this.selfTrans = this.getSceneObject().getTransform()
     if (this.cameraObject) this.camTrans = this.cameraObject.getTransform()
 
     // CoverFlow navigation: pinch-drag scrubs through the result deck. Either hand
@@ -496,6 +512,9 @@ export class CardDeckController extends BaseScriptComponent {
       card,
       trans: obj.getTransform(),
       entry,
+      // Append-only: this slot's index is the current length (set on push below).
+      index: this.slots.length,
+      interactable: null,
       sizeScale,
       azDeg: 0,
       elDeg: 0,
@@ -611,6 +630,26 @@ export class CardDeckController extends BaseScriptComponent {
       interactable.allowMultipleInteractors = false
       interactable.onTriggerEnd.add(() => this.selectCard(slotIndex))
     }
+    // Track it so a front deck can suspend SIK targeting on the cosmos cards. If a
+    // card is spawned while a deck is already up, start it disabled to match.
+    const slot = this.slots[slotIndex]
+    if (slot) {
+      slot.interactable = interactable
+      if (this.resultsActive || this.verticalActive) {
+        if (interactable.enabled) interactable.enabled = false
+      }
+    }
+  }
+
+  // Enables or disables every cosmos card's tap-to-select Interactable. Called when a
+  // front deck (CoverFlow / vertical browse) appears or clears: while a deck is up the
+  // cards can't be tap-selected anyway (selectCard no-ops), so suspending them removes
+  // their per-frame SIK targeting cost. Idempotent.
+  private setDeckInteractablesEnabled(enabled: boolean): void {
+    for (let i = 0; i < this.slots.length; i++) {
+      const it = this.slots[i].interactable
+      if (it && it.enabled !== enabled) it.enabled = enabled
+    }
   }
 
   // Refits a card's root selection collider to its measured content footprint (root-local
@@ -662,6 +701,11 @@ export class CardDeckController extends BaseScriptComponent {
 
   private update(dt: number): void {
     if (this.slots.length === 0) return
+    // Recompute the per-frame caches once (used by buildWrappedLayout below and by
+    // every slot in the loops): the shared billboard rotation and the parent world
+    // scale. This replaces ~37 quat.lookAt + getWorldScale calls per frame with one.
+    this.frameBillboardRot = this.camTrans ? quat.lookAt(this.camTrans.forward, vec3.up()) : null
+    this.frameParentScale = this.getParentScale(true)
     // This only ticks while the deck is actually visible (UpdateEvent is gated by
     // hierarchy-enabled state), so polling here is how the deck "reads" the
     // persistent store on show — folding in cards captured while it was switched
@@ -781,7 +825,7 @@ export class CardDeckController extends BaseScriptComponent {
 
     // Cards inherit this parent's scale — convert a target WORLD scale to a local
     // scale by dividing it out (this is the hidden multiplier that blew cards up).
-    const parentScale = this.getSceneObject().getTransform().getWorldScale()
+    const parentScale = this.getParentScale()
 
     // Per-card footprint radius (cm) from each card's REAL measured size; band
     // half-height (cm). Every card sits at world scale 1, so its measured root-local
@@ -1069,6 +1113,8 @@ export class CardDeckController extends BaseScriptComponent {
     this.resultsActive = indices.length > 0
     this.searchActive = false
     this.driftFrozen = true
+    // A front deck is up: suspend cosmos-card tap targeting (re-enabled on clear).
+    if (this.resultsActive) this.setDeckInteractablesEnabled(false)
     // Start centred on the MIDDLE of the result array (not an end card).
     this.selectedPos = Math.floor(indices.length / 2)
     this.scrubPos = this.selectedPos
@@ -1108,6 +1154,8 @@ export class CardDeckController extends BaseScriptComponent {
     this.selectedPos = 0
     this.scrubPos = 0
     this.pinching = false
+    // Front deck gone: restore cosmos-card tap-to-select.
+    this.setDeckInteractablesEnabled(true)
     // A capture arrived while results were up; re-shuffle now that they're gone.
     if (this.relayoutPending) this.requestRelayout()
   }
@@ -1196,6 +1244,8 @@ export class CardDeckController extends BaseScriptComponent {
     this.verticalActive = true
     this.driftFrozen = true
     this.searchActive = false
+    // A front deck is up: suspend cosmos-card tap targeting (re-enabled on clear).
+    this.setDeckInteractablesEnabled(false)
     this.vScrub = 0
     this.vScrubStart = 0
     this.vSettleTarget = 0
@@ -1391,6 +1441,9 @@ export class CardDeckController extends BaseScriptComponent {
     this.vScrubVelCmPerSec = 0
     this.vDragAccumCm = 0
     this.vDragTracker.end()
+    // Front deck gone: restore cosmos-card tap-to-select. (When showQueryResults
+    // calls this to supersede, it re-disables right after, so net stays correct.)
+    if (!this.resultsActive) this.setDeckInteractablesEnabled(true)
   }
 
   // World height (cm) of a card at the given world scale: the measured footprint when
@@ -1408,7 +1461,7 @@ export class CardDeckController extends BaseScriptComponent {
   // them about the horizontal axis (resultRowRight) instead of world-up. Only roles
   // -1/0/+1 exist; r slides with vScrub during a drag so cards ease through smoothly.
   private layoutVerticalSlot(slot: DeckSlot, dt: number): void {
-    const slotIndex = this.slots.indexOf(slot)
+    const slotIndex = slot.index
     // k is the card's settled slot offset from centre: -1 top, 0 centre, +1 bottom for the
     // 3 roles, or ±2 for the transient incoming card sliding in from an edge.
     let k: number
@@ -1524,7 +1577,7 @@ export class CardDeckController extends BaseScriptComponent {
   // full size; side cards fold toward centre, shrink, and recede with distance from
   // the current scrub position.
   private layoutResultSlot(slot: DeckSlot, dt: number): void {
-    const k = this.resultIndices.indexOf(this.slots.indexOf(slot))
+    const k = this.resultIndices.indexOf(slot.index)
     if (k < 0) return
 
     // Defensive @input fallbacks: a component placed before these fields existed reads
@@ -1585,7 +1638,7 @@ export class CardDeckController extends BaseScriptComponent {
   // world scale (mirrors buildWrappedLayout's per-card sizing).
   private applyWorldScale(slot: DeckSlot, worldScale: number): void {
     if (!(worldScale > 0) || !isFinite(worldScale)) return // never NaN-corrupt the transform
-    const p = this.getSceneObject().getTransform().getWorldScale()
+    const p = this.getParentScale()
     slot.trans.setLocalScale(new vec3(
       p.x > 1e-4 ? worldScale / p.x : worldScale,
       p.y > 1e-4 ? worldScale / p.y : worldScale,
@@ -1685,13 +1738,23 @@ export class CardDeckController extends BaseScriptComponent {
   // parent's world scale, mirroring applyWorldScale) so size animates on navigation.
   private easeWorldScale(slot: DeckSlot, worldScale: number, t: number): void {
     if (!(worldScale > 0) || !isFinite(worldScale)) return
-    const p = this.getSceneObject().getTransform().getWorldScale()
+    const p = this.getParentScale()
     const target = new vec3(
       p.x > 1e-4 ? worldScale / p.x : worldScale,
       p.y > 1e-4 ? worldScale / p.y : worldScale,
       p.z > 1e-4 ? worldScale / p.z : worldScale,
     )
-    slot.trans.setLocalScale(vec3.lerp(slot.trans.getLocalScale(), target, t))
+    // Already at the target: skip the write so a resting card never feeds tiny
+    // scale deltas into the card's layout/measure pass (relayout churn source).
+    const cur = slot.trans.getLocalScale()
+    if (
+      Math.abs(cur.x - target.x) < 1e-4 &&
+      Math.abs(cur.y - target.y) < 1e-4 &&
+      Math.abs(cur.z - target.z) < 1e-4
+    ) {
+      return
+    }
+    slot.trans.setLocalScale(vec3.lerp(cur, target, t))
   }
 
   // Resolves an @input number, falling back when a stale scene component reads it
@@ -1702,7 +1765,18 @@ export class CardDeckController extends BaseScriptComponent {
 
   private billboardSlot(slot: DeckSlot): void {
     if (!this.camTrans) return
-    slot.trans.setWorldRotation(quat.lookAt(this.camTrans.forward, vec3.up()))
+    // Reuse the rotation computed once this frame; fall back to a fresh compute
+    // for the rare off-frame caller (none currently).
+    const rot = this.frameBillboardRot ?? quat.lookAt(this.camTrans.forward, vec3.up())
+    slot.trans.setWorldRotation(rot)
+  }
+
+  // The parent (this object's) world scale. Cached per frame in update(); pass
+  // fresh=true to force a recompute (used to seed the per-frame cache itself).
+  private getParentScale(fresh: boolean = false): vec3 {
+    if (!fresh && this.frameParentScale) return this.frameParentScale
+    const t = this.selfTrans ?? this.getSceneObject().getTransform()
+    return t.getWorldScale()
   }
 
   // Anchor point: the globe's top surface point if available.

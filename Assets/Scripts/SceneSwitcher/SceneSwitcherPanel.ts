@@ -178,6 +178,10 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   @hint("Dead zone radius in cm: the panel only chases the camera once the target drifts beyond this, killing micro-jitter.")
   positionDeadzone: number = 5;
 
+  @input
+  @hint("Rotation dead zone in degrees: the panel only re-aims once the target rotation drifts beyond this, so a still/slightly-moving head costs no rotation work. Set 0 to always re-aim.")
+  rotationDeadzoneDeg: number = 0.5;
+
   // --- Logging ---
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -197,6 +201,8 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   private pendingIndex: number | null = null;
 
   private camTrans: Transform | null = null;
+  // This panel's transform, cached once in setup() (was re-fetched every frame).
+  private panelTrans: Transform | null = null;
   // Smoothed pose, seeded (snapped) on the first update.
   private currentPos: vec3 | null = null;
   private currentRot: quat | null = null;
@@ -235,6 +241,7 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   }
 
   private setup() {
+    this.panelTrans = this.getSceneObject().getTransform();
     if (this.cameraObj) {
       this.camTrans = this.cameraObj.getTransform();
     } else {
@@ -408,32 +415,46 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   }
 
   private update(dt: number) {
-    if (!this.enableTracking || !this.camTrans) return;
+    if (!this.enableTracking || !this.camTrans || !this.panelTrans) return;
 
     const desired = this.computeDesiredPosition();
     // Content faces the user when its forward matches the camera's forward
     // (the established billboard convention in this project, see CardDeckController).
     const targetRot = quat.lookAt(this.camTrans.forward, vec3.up());
-    const panelTrans = this.getSceneObject().getTransform();
 
     if (this.currentPos === null || this.currentRot === null) {
       // Snap into place on the first frame.
       this.currentPos = desired;
       this.currentRot = targetRot;
-    } else {
-      // Dead zone: only chase the camera once the target drifts beyond the slack
-      // ball, then ease toward its edge so small head moves don't cause jitter.
-      const toDesired = desired.sub(this.currentPos);
-      const dist = toDesired.length;
-      if (dist > this.positionDeadzone) {
-        const edge = desired.sub(toDesired.normalize().uniformScale(this.positionDeadzone));
-        this.currentPos = vec3.lerp(this.currentPos, edge, Math.min(1, this.followSpeed * dt));
-      }
-      this.currentRot = quat.slerp(this.currentRot, targetRot, Math.min(1, this.rotateSpeed * dt));
+      this.panelTrans.setWorldPosition(this.currentPos);
+      this.panelTrans.setWorldRotation(this.currentRot);
+      return;
     }
 
-    panelTrans.setWorldPosition(this.currentPos);
-    panelTrans.setWorldRotation(this.currentRot);
+    // Position dead zone: only chase the camera once the target drifts beyond the
+    // slack ball, then ease toward its edge so small head moves don't cause jitter.
+    let posChanged = false;
+    const toDesired = desired.sub(this.currentPos);
+    const dist = toDesired.length;
+    if (dist > this.positionDeadzone) {
+      const edge = desired.sub(toDesired.normalize().uniformScale(this.positionDeadzone));
+      this.currentPos = vec3.lerp(this.currentPos, edge, Math.min(1, this.followSpeed * dt));
+      posChanged = true;
+    }
+
+    // Rotation dead zone (same idea as position): only re-aim once the target
+    // rotation drifts beyond the angular slack, so a still or barely-moving head
+    // skips the slerp + setWorldRotation entirely.
+    let rotChanged = false;
+    const deadzoneRad = Math.max(0, this.rotationDeadzoneDeg) * (Math.PI / 180);
+    if (deadzoneRad <= 0 || quat.angleBetween(this.currentRot, targetRot) > deadzoneRad) {
+      this.currentRot = quat.slerp(this.currentRot, targetRot, Math.min(1, this.rotateSpeed * dt));
+      rotChanged = true;
+    }
+
+    // Converged (inside both dead zones): nothing to write this frame.
+    if (posChanged) this.panelTrans.setWorldPosition(this.currentPos);
+    if (rotChanged) this.panelTrans.setWorldRotation(this.currentRot);
   }
 
   private computeDesiredPosition(): vec3 {

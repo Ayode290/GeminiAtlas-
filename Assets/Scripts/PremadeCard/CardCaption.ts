@@ -90,7 +90,10 @@ export class CardCaption extends BaseScriptComponent {
   setVisible(visible: boolean): void {
     if (!this.captionText) return
     if (visible) this.setFillAlpha(this.fullAlpha)
-    this.captionText.getSceneObject().enabled = visible
+    // Skip the write when already in this state so a redundant toggle never
+    // re-fires the Text component's lifecycle (a source of per-frame churn).
+    const obj = this.captionText.getSceneObject()
+    if (obj.enabled !== visible) obj.enabled = visible
   }
 
   /**
@@ -101,7 +104,10 @@ export class CardCaption extends BaseScriptComponent {
   beginMeasure(): void {
     if (!this.captionText) return
     this.setFillAlpha(0)
-    this.captionText.getSceneObject().enabled = true
+    // Only flip the object on if it isn't already, so re-measuring an
+    // already-laid-out caption doesn't re-fire the Text lifecycle.
+    const obj = this.captionText.getSceneObject()
+    if (!obj.enabled) obj.enabled = true
   }
 
   /**

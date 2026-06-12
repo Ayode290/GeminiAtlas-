@@ -182,6 +182,8 @@ export class AgentRing extends BaseScriptComponent {
   private camTrans: Transform | null = null
   private selfTrans: Transform
   private sharedTime = 0
+  // Round-robin cursor: only one disc's mesh is rebuilt per frame (see update()).
+  private discCursor = 0
 
   // Eyes: static meshes; only their transforms animate.
   private eyeDiscs: AgentNoiseDisc[] = []
@@ -196,6 +198,11 @@ export class AgentRing extends BaseScriptComponent {
   private dartTargetY = 0
   private dartActualX = 0
   private dartActualY = 0
+  // Last eye pose actually written; lets updateEyes skip its transform writes
+  // when the eyes are at rest (open and centered, not blinking or darting).
+  private lastEyeOpenness = -1
+  private lastEyeDartX = NaN
+  private lastEyeDartY = NaN
 
   onAwake(): void {
     this.logger = new Logger("AgentRing", this.enableLogging, true)
@@ -233,6 +240,15 @@ export class AgentRing extends BaseScriptComponent {
         zOffset: (i - 1) * this.zGap, // -gap, 0, +gap
       })
       this.discs.push(disc)
+    }
+
+    // Render every layer once so all three are valid on the first frame (the
+    // constructor leaves a collapsed placeholder mesh). update() then refreshes one
+    // layer per frame round-robin, so without this the other two would flash
+    // collapsed for a frame or two at spawn. At amplitude 0 divergence is 0, so all
+    // layers share time 0 and the quiet distortion — exactly the resting look.
+    for (let i = 0; i < this.discs.length; i++) {
+      this.discs[i].render(0, this.quietDistortion, this.noiseScale)
     }
 
     if (this.showEyes) this.spawnEyes()
@@ -286,9 +302,15 @@ export class AgentRing extends BaseScriptComponent {
     // (shaped by the exponent) so the per-layer seeds pull their noise times apart.
     const div = Math.pow(amp, Math.max(0.01, this.divergenceExponent)) * this.divergence
 
-    for (let i = 0; i < this.discs.length; i++) {
+    // Round-robin: rebuild ONE disc's mesh per frame instead of all three. Each
+    // disc then refreshes at ~20 Hz (60/3), imperceptible for the slow Perlin
+    // undulation, and the loudness-driven color bloom still reads within 3 frames
+    // since each disc samples the live sharedTime/distortion/divergence on its turn.
+    if (this.discs.length > 0) {
+      const i = this.discCursor % this.discs.length
       const layerTime = this.sharedTime + LAYER_SEEDS[i] * div
       this.discs[i].render(layerTime, distortion, this.noiseScale)
+      this.discCursor++
     }
 
     this.updateEyes(dt)
@@ -346,6 +368,19 @@ export class AgentRing extends BaseScriptComponent {
     const k = Math.min(1, 25 * dt)
     this.dartActualX += (this.dartTargetX - this.dartActualX) * k
     this.dartActualY += (this.dartTargetY - this.dartActualY) * k
+
+    // Skip the transform writes entirely when the eyes are at rest (open, centered,
+    // and no longer easing). Once a blink ends and the dart settles, openness and
+    // dartActual stop changing, so the two setLocal* calls per eye are elided until
+    // the next blink/dart kicks in.
+    const dartMoved =
+      Math.abs(this.dartActualX - this.lastEyeDartX) > 1e-4 ||
+      Math.abs(this.dartActualY - this.lastEyeDartY) > 1e-4
+    const blinkMoved = Math.abs(openness - this.lastEyeOpenness) > 1e-4
+    if (!dartMoved && !blinkMoved) return
+    this.lastEyeDartX = this.dartActualX
+    this.lastEyeDartY = this.dartActualY
+    this.lastEyeOpenness = openness
 
     const halfD = this.eyeDistance * 0.5
     const z = this.eyeForward

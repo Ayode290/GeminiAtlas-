@@ -168,7 +168,7 @@
     - "// @input float cardHeightCm = 15 {\"hint\":\"FALLBACK card footprint HEIGHT (cm), used only for a card that hasn't measured its real size. Measured cards ignore this.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Gaze focus (cards near your view centre grow)</span>"}'
-    - "// @input bool gazeScaleEnabled = true {\"hint\":\"Grow resting cards that fall within a cone around the camera's view centre, biggest at the centre.\"}"
+    - "// @input bool gazeScaleEnabled {\"hint\":\"Grow resting cards that fall within a cone around the camera's view centre, biggest at the centre. Default OFF: when on, resting cards continuously ease their root scale as the gaze cone passes over them, which re-fires each card's layout/measure pass every frame (a large CPU cost).\"}"
     - '// @input float gazeScaleConeDeg = 18 {"hint":"Half-angle (degrees) of the gaze cone around the view centre. Cards inside it grow; cards outside stay at their resting size."}'
     - '// @input float gazeScaleMaxBoost = 1.6 {"hint":"Scale multiplier applied to the card EXACTLY at the view centre (1 = no growth). Falls off smoothly to 1 at the cone edge."}'
     - '// @input float gazeScaleEaseRate = 8 {"hint":"How quickly a card eases to its gaze-target size (higher = snappier)."}'

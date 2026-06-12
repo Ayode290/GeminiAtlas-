@@ -115,6 +115,22 @@ export class AgentSubtitle extends BaseScriptComponent {
 
   private pose: SubtitlePose | null = null
 
+  // Dirty-check state so a steady (unchanged) caption skips its per-frame work:
+  // the rolling text is only re-sliced when the revealed window moves, the layout
+  // is only recomputed when the pose/size inputs change, and the world transform
+  // is only re-written when the pose moves.
+  private lastRenderStart = -1
+  private lastRenderEnd = -1
+  private lastLayoutLineH = -1
+  private lastLayoutWidth = -1
+  private lastLayoutHAlign: HAlign | "" = ""
+  private lastLayoutVAlign: VAlign | "" = ""
+  private lastLayoutTwoLineH = -1
+  private lastPoseX = NaN
+  private lastPoseY = NaN
+  private lastPoseZ = NaN
+  private lastPoseRotW = NaN
+
   onAwake(): void {
     this.logger = new Logger("AgentSubtitle", this.enableLogging, true)
     ;(global as any).agentSubtitle = this
@@ -180,6 +196,8 @@ export class AgentSubtitle extends BaseScriptComponent {
     this.displayStart = 0
     this.idleAfterDone = 0
     this.silentSeconds = 0
+    this.lastRenderStart = -1
+    this.lastRenderEnd = -1
   }
 
   /** Buffered speech still to be heard (the clock we pace the typewriter against). */
@@ -264,7 +282,8 @@ export class AgentSubtitle extends BaseScriptComponent {
     }
 
     if (!this.pose || this.accumulated.length === 0) {
-      this.text.text = ""
+      // Clear once, then stay idle — don't rewrite the (already empty) text every frame.
+      if (this.text.text.length !== 0) this.text.text = ""
       return
     }
     if (!this.loggedShow) {
@@ -274,17 +293,45 @@ export class AgentSubtitle extends BaseScriptComponent {
 
     this.applyLayout(this.pose)
     this.renderRolling()
-    // Pose is written after layout so scale/rect are consistent this frame.
-    this.textTrans.setWorldRotation(this.pose.rot)
-    this.textTrans.setWorldPosition(this.pose.pos)
+    // Pose is written after layout so scale/rect are consistent this frame. Only
+    // re-write the transform when the orb actually moved this frame.
+    const p = this.pose
+    if (
+      p.pos.x !== this.lastPoseX || p.pos.y !== this.lastPoseY || p.pos.z !== this.lastPoseZ ||
+      p.rot.w !== this.lastPoseRotW
+    ) {
+      this.textTrans.setWorldRotation(p.rot)
+      this.textTrans.setWorldPosition(p.pos)
+      this.lastPoseX = p.pos.x
+      this.lastPoseY = p.pos.y
+      this.lastPoseZ = p.pos.z
+      this.lastPoseRotW = p.rot.w
+    }
   }
 
   /** Sets world scale + wrap rect so one line = lineHeightCm (half the orb height). */
   private applyLayout(p: SubtitlePose): void {
+    const ref = this.twoLineLocalH > 0 ? this.twoLineLocalH : Math.max(1, MEASURE_FONT_SIZE * 2.6)
+    // Skip the layout writes when none of the inputs that drive them changed since
+    // last frame (size law + wrap rect + alignments are all derived from these).
+    if (
+      p.lineHeightCm === this.lastLayoutLineH &&
+      p.widthCm === this.lastLayoutWidth &&
+      p.hAlign === this.lastLayoutHAlign &&
+      p.vAlign === this.lastLayoutVAlign &&
+      ref === this.lastLayoutTwoLineH
+    ) {
+      return
+    }
+    this.lastLayoutLineH = p.lineHeightCm
+    this.lastLayoutWidth = p.widthCm
+    this.lastLayoutHAlign = p.hAlign
+    this.lastLayoutVAlign = p.vAlign
+    this.lastLayoutTwoLineH = ref
+
     // Ensure full opacity (calibration may have left the sample transparent).
     this.text.textFill.color = this.color
     const orbFullCm = p.lineHeightCm * 2 * this.heightScale
-    const ref = this.twoLineLocalH > 0 ? this.twoLineLocalH : Math.max(1, MEASURE_FONT_SIZE * 2.6)
     const S = orbFullCm / ref // world scale: 2-line block == orb height * heightScale
     this.textTrans.setWorldScale(vec3.one().uniformScale(S))
 
@@ -309,6 +356,11 @@ export class AgentSubtitle extends BaseScriptComponent {
   private renderRolling(): void {
     const end = Math.floor(this.revealed)
     if (this.displayStart > end) this.displayStart = end
+
+    // Nothing new revealed and the window front hasn't moved: the shown string is
+    // already correct, so skip the slice + getBoundingBox measure this frame.
+    if (end === this.lastRenderEnd && this.displayStart === this.lastRenderStart) return
+
     this.text.text = this.accumulated.slice(this.displayStart, end)
 
     // Fit to 2 lines, measuring at most ONCE per frame (getBoundingBox is rate-limited
@@ -324,11 +376,17 @@ export class AgentSubtitle extends BaseScriptComponent {
       }
     }
 
+    this.lastRenderEnd = end
+    this.lastRenderStart = this.displayStart
+
     // Compact the dead prefix occasionally so `accumulated` doesn't grow unbounded.
     if (this.displayStart > 4000) {
       this.accumulated = this.accumulated.slice(this.displayStart)
       this.revealed -= this.displayStart
       this.displayStart = 0
+      // The window indices were rebased; force a re-render next frame.
+      this.lastRenderEnd = -1
+      this.lastRenderStart = -1
     }
   }
 }

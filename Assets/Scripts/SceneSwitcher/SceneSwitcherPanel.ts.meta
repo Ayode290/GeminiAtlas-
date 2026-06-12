@@ -42,6 +42,7 @@
     labelSize: false
     positionDeadzone: false
     rotateSpeed: false
+    rotationDeadzoneDeg: false
     scene1Button: false
     scene1IconTexture: false
     scene1Label: false
@@ -96,6 +97,7 @@
       followSpeed: !<float> 6.000000
       rotateSpeed: !<float> 6.000000
       positionDeadzone: !<float> 5.000000
+      rotationDeadzoneDeg: 0.500000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -143,6 +145,7 @@
     - '// @input float followSpeed = 6 {"hint":"Position follow speed (lerp factor = followSpeed * dt). Lower = lazier, laggier follow."}'
     - '// @input float rotateSpeed = 6 {"hint":"Rotation follow speed for the billboard (slerp factor = rotateSpeed * dt)."}'
     - '// @input float positionDeadzone = 5 {"hint":"Dead zone radius in cm: the panel only chases the camera once the target drifts beyond this, killing micro-jitter."}'
+    - '// @input float rotationDeadzoneDeg = 0.5 {"hint":"Rotation dead zone in degrees: the panel only re-aims once the target rotation drifts beyond this, so a still/slightly-moving head costs no rotation work. Set 0 to always re-aim."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - '// @input bool enableLogging {"hint":"Enable general logging"}'

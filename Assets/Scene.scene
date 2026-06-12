@@ -3891,7 +3891,7 @@
       heightOffset: -18.500000
       followSpeed: !<float> 6.000000
       rotateSpeed: !<float> 4.000000
-      positionDeadzone: 0.100000
+      positionDeadzone: !<float> 2.000000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -7885,7 +7885,6 @@
   ScriptAsset: !<reference> 6c013ed9-5070-426e-96d9-7da4cc246ac0
   ScriptInputsDefault:
     centerObject: true
-    gazeScaleEnabled: true
     topicWeight: true
     locationWeight: true
     dateWeight: true
@@ -7967,7 +7966,7 @@
       cardSizeMaxScale: 1.750000
       cardWidthCm: !<float> 10.000000
       cardHeightCm: !<float> 15.000000
-      gazeScaleEnabled: true
+      gazeScaleEnabled: false
       gazeScaleConeDeg: !<float> 10.000000
       gazeScaleMaxBoost: 1.300000
       gazeScaleEaseRate: !<float> 3.000000
@@ -8790,7 +8789,7 @@
       baseMaterial: !<reference.Material> 539454c8-637b-438a-9281-722f5ace94c8
       palette: !<Vec4[]>
         []
-      bubbleCount: !<float> 90.000000
+      bubbleCount: !<float> 60.000000
       minDistance: !<float> 300.000000
       maxDistance: !<float> 1500.000000
       spawnOnWavefront: true
