@@ -37,6 +37,7 @@
     labelSize: false
     ovalAspect: false
     panelOffset: false
+    preselectedTopics: false
     startLabel: false
     topics: false
     verticalGap: false
@@ -53,6 +54,8 @@
       cameraObj: !<reference.SceneObject> 00000000-0000-0000-0000-000000000000
       interestStore: !<MappingBased.AssignableType_1> 00000000-0000-0000-0000-000000000000
       topics: !<string[]>
+        []
+      preselectedTopics: !<string[]>
         []
       ovalAspect: 1.600000
       horizontalGap: 1.500000
@@ -77,6 +80,7 @@
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Layout</span>"}'
     - '// @input string[] topics = {} {"hint":"Topics to show. Leave empty to use the editable DEFAULT_TOPICS list."}'
+    - '// @input string[] preselectedTopics = {} {"hint":"Topics toggled on at launch. Matching is case/space-insensitive against the shown topics."}'
     - '// @input float ovalAspect = 1.6 {"hint":"Width/height ratio of the oval cluster. >1 is wider than tall. Drives how many rows are used."}'
     - '// @input float horizontalGap = 1.5 {"hint":"Horizontal gap between buttons (cm)"}'
     - '// @input float verticalGap = 1 {"hint":"Vertical gap between honeycomb rows (cm)"}'

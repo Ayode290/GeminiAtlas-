@@ -9,10 +9,21 @@
  * button is shown in its highlighted (toggled) visual state, its icon image is
  * driven to full opacity, and the inactive buttons' icons fade back.
  *
- * The whole panel continuously billboards in front of the camera: each frame it
- * eases (lerp/slerp) toward a point a configurable distance + height in front of
- * the head, but only once the head has drifted beyond a dead zone — so small
- * head movements don't make the panel jitter.
+ * The panel supports two placement modes (see `attachToRightPalm`):
+ *   1. Camera billboard (default): each frame it eases (lerp/slerp) toward a
+ *      point a configurable distance + height in front of the head, but only
+ *      once the head drifts beyond a dead zone — so small head moves don't jitter.
+ *   2. Right-palm attach: the panel rides above the right wrist (configurable
+ *      xyz offset in wrist space) and only becomes visible while the right palm
+ *      faces the user (the classic raise-your-palm hand-menu gesture). Hidden
+ *      otherwise.
+ *
+ * IMPORTANT state-management note: this script is the authority for the radio
+ * enable/disable of the three scene groups, so it must keep running at all
+ * times — even while the palm panel is hidden. Hiding therefore disables ONLY
+ * the button child objects (the visible UI), never this script's own object or
+ * the per-group content objects. That way the active scene stays correct and
+ * the right-hand pose keeps being polled while the panel is out of view.
  *
  * Registered on `global.sceneSwitcher` so it can be driven across prefab
  * boundaries — today by the buttons, in future by a WebSocket message or the
@@ -22,6 +33,8 @@
  */
 import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 import { RoundButton } from "SpectaclesUIKit.lspkg/Scripts/Components/Button/RoundButton";
+import { SIK } from "SpectaclesInteractionKit.lspkg/SIK";
+import TrackedHand, { PalmState } from "SpectaclesInteractionKit.lspkg/Providers/HandInputData/TrackedHand";
 
 // A scene-switcher group: its label, button, icon texture/runtime image, and the
 // objects it owns. `icon` is the Image component the script builds at runtime
@@ -182,6 +195,45 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   @hint("Rotation dead zone in degrees: the panel only re-aims once the target rotation drifts beyond this, so a still/slightly-moving head costs no rotation work. Set 0 to always re-aim.")
   rotationDeadzoneDeg: number = 0.5;
 
+  // --- Right-palm attach mode ---
+  @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Right-Palm Attach Mode</span><br/><span style="color: #94A3B8; font-size: 11px;">When ON, the panel ignores camera tracking and instead rides above the right wrist, appearing only while the right palm faces you (the classic raise-your-palm hand-menu gesture). The script keeps running while hidden so the active scene and pose detection are unaffected. In the editor (no hand tracking) it falls back to camera billboard so you can still see it.</span>')
+  @input
+  @hint("Attach the panel to the right palm (turn your palm toward you to reveal it) instead of billboarding in front of the camera.")
+  attachToRightPalm: boolean = false;
+
+  @input
+  @hint("Offset (cm) from the right wrist, in the wrist's local space, where the panel sits. Positive Y lifts it above the open palm.")
+  palmOffset: vec3 = new vec3(0, 8, 0);
+
+  @input
+  @hint("Palm-facing tolerance in degrees: the panel shows while the palm faces you within this angle. Larger = easier to trigger.")
+  palmFacingMaxAngleDeg: number = 55;
+
+  @input
+  @hint("Also require the palm to be open/flat (not a fist) before showing.")
+  requireFlatPalm: boolean = false;
+
+  @input
+  @hint("Consecutive palm-facing frames required before the panel appears (debounce against flicker).")
+  palmShowHoldFrames: number = 3;
+
+  @input
+  @hint("Consecutive non-facing frames required before the panel hides (kept higher than show so brief wobbles don't blink it).")
+  palmHideHoldFrames: number = 8;
+
+  @input
+  @hint("Position follow speed while palm-attached (lerp factor = speed * dt). Higher = snappier to the hand.")
+  palmFollowSpeed: number = 14;
+
+  @input
+  @hint("Rotation follow speed while palm-attached (slerp factor = speed * dt).")
+  palmRotateSpeed: number = 14;
+
+  @input
+  @hint("Billboard the palm panel toward the camera (readable text). Turn off to align it to the wrist orientation instead.")
+  palmFaceCamera: boolean = true;
+
   // --- Logging ---
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -203,13 +255,30 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   private camTrans: Transform | null = null;
   // This panel's transform, cached once in setup() (was re-fetched every frame).
   private panelTrans: Transform | null = null;
-  // Smoothed pose, seeded (snapped) on the first update.
+  // Smoothed pose, seeded (snapped) on the first update. Reset to null whenever
+  // the panel (re)appears so it snaps onto its new anchor instead of flying in.
   private currentPos: vec3 | null = null;
   private currentRot: quat | null = null;
+
+  // --- Palm-attach state ---
+  private isEditor: boolean = false;
+  // Lazily resolved so SIK is ready; never reassigned once tracked.
+  private rightHand: TrackedHand | null = null;
+  // Whether the visible UI (button children) is currently shown. The script and
+  // its group management run regardless of this flag.
+  private panelVisible: boolean = true;
+  // Debounce counters for the palm-up show/hide hysteresis.
+  private palmShowCounter: number = 0;
+  private palmHideCounter: number = 0;
 
   onAwake() {
     this.logger = new Logger("SceneSwitcherPanel", this.enableLogging || this.enableLoggingLifecycle, true);
     if (this.enableLoggingLifecycle) this.logger.debug("LIFECYCLE: onAwake()");
+
+    this.isEditor = global.deviceInfoSystem.isEditor();
+    // Hand tracking only yields real data on-device; resolving the handle here is
+    // cheap and safe. It's polled each frame in palm mode.
+    this.rightHand = SIK.HandInputData.getHand("right");
 
     // Snapshot the inspector inputs into immutable group records. Filtering null
     // objects here keeps the rest of the code free of repeated null checks.
@@ -256,6 +325,11 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
     const startIndex = this.pendingIndex !== null ? this.pendingIndex : this.initialGroup - 1;
     this.pendingIndex = null;
     this.applySelection(startIndex);
+
+    // Palm mode starts hidden (revealed on a palm-up pose); every other mode —
+    // including the editor fallback — starts visible.
+    const startsInPalmMode = this.attachToRightPalm && !this.isEditor;
+    this.setPanelVisible(!startsInPalmMode);
 
     this.createEvent("UpdateEvent").bind(() => this.update(getDeltaTime()));
     this.logger.info("Scene switcher ready with " + this.groups.length + " groups.");
@@ -415,8 +489,24 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
   }
 
   private update(dt: number) {
-    if (!this.enableTracking || !this.camTrans || !this.panelTrans) return;
+    if (!this.panelTrans) return;
 
+    // Palm mode only runs on-device (no hand tracking in the editor); the editor
+    // falls through to camera billboard so the panel stays inspectable.
+    if (this.attachToRightPalm && !this.isEditor) {
+      this.updatePalmMode(dt);
+      return;
+    }
+
+    // Camera billboard mode also covers the in-editor palm-mode fallback, so make
+    // sure the UI is shown before tracking the head.
+    this.setPanelVisible(true);
+    if (this.enableTracking && this.camTrans) {
+      this.updateCameraMode(dt);
+    }
+  }
+
+  private updateCameraMode(dt: number) {
     const desired = this.computeDesiredPosition();
     // Content faces the user when its forward matches the camera's forward
     // (the established billboard convention in this project, see CardDeckController).
@@ -455,6 +545,94 @@ export class SceneSwitcherPanel extends BaseScriptComponent {
     // Converged (inside both dead zones): nothing to write this frame.
     if (posChanged) this.panelTrans.setWorldPosition(this.currentPos);
     if (rotChanged) this.panelTrans.setWorldRotation(this.currentRot);
+  }
+
+  /**
+   * Palm-attach mode. Polls the right hand every frame (so detection works even
+   * while hidden), runs a show/hide hysteresis on the palm-up pose, and — when
+   * visible — eases the panel onto a point offset from the wrist.
+   */
+  private updatePalmMode(dt: number) {
+    const tracked = this.rightHand !== null && this.rightHand.isTracked();
+    const palmFacing = tracked && this.isRightPalmFacingUser();
+
+    // Hysteresis: separate show/hide counters keep brief wobbles from blinking
+    // the panel. One pose resets the opposite counter.
+    if (palmFacing) {
+      this.palmShowCounter++;
+      this.palmHideCounter = 0;
+    } else {
+      this.palmHideCounter++;
+      this.palmShowCounter = 0;
+    }
+
+    if (!this.panelVisible && this.palmShowCounter >= this.palmShowHoldFrames) {
+      this.setPanelVisible(true);
+    } else if (this.panelVisible && this.palmHideCounter >= this.palmHideHoldFrames) {
+      this.setPanelVisible(false);
+    }
+
+    // Nothing to position while hidden or when the hand dropped out of tracking.
+    if (!this.panelVisible || !tracked) return;
+
+    const wrist = this.rightHand.wrist;
+    if (!wrist || !wrist.position) return;
+
+    // Offset is expressed in the wrist's local space so the panel keeps its
+    // "above the palm" placement as the hand rotates.
+    const desired = wrist.position.add(wrist.rotation.multiplyVec3(this.palmOffset));
+    const targetRot =
+      this.palmFaceCamera && this.camTrans
+        ? quat.lookAt(this.camTrans.forward, vec3.up())
+        : wrist.rotation;
+
+    if (this.currentPos === null || this.currentRot === null) {
+      // Snap onto the palm on the frame it (re)appears.
+      this.currentPos = desired;
+      this.currentRot = targetRot;
+    } else {
+      this.currentPos = vec3.lerp(this.currentPos, desired, Math.min(1, this.palmFollowSpeed * dt));
+      this.currentRot = quat.slerp(this.currentRot, targetRot, Math.min(1, this.palmRotateSpeed * dt));
+    }
+
+    this.panelTrans.setWorldPosition(this.currentPos);
+    this.panelTrans.setWorldRotation(this.currentRot);
+  }
+
+  /**
+   * True when the right palm faces the user — the classic "raise your palm to
+   * summon the menu" gesture. Uses SIK's own facing metric (angle between the
+   * palm normal and the hand→camera direction, chirality handled internally),
+   * gated by the configurable tolerance so a roughly-toward-you palm counts.
+   */
+  private isRightPalmFacingUser(): boolean {
+    const hand = this.rightHand;
+    if (!hand) return false;
+
+    const facingAngle = hand.getFacingCameraAngle();
+    if (facingAngle === null || facingAngle > Math.max(0, this.palmFacingMaxAngleDeg)) return false;
+
+    if (this.requireFlatPalm && hand.palmState !== PalmState.Flat) return false;
+    return true;
+  }
+
+  /**
+   * Shows/hides ONLY the button child objects (and their icon/label children).
+   * This script's object and the per-group content objects are never touched, so
+   * the active scene and right-hand polling are unaffected while hidden. On a
+   * transition to visible we drop the smoothed pose so it snaps to its anchor.
+   */
+  private setPanelVisible(visible: boolean) {
+    if (this.panelVisible === visible) return;
+    this.panelVisible = visible;
+    this.groups.forEach((group) => {
+      if (group.buttonObj) group.buttonObj.enabled = visible;
+    });
+    if (visible) {
+      this.currentPos = null;
+      this.currentRot = null;
+    }
+    if (this.enableLogging) this.logger.debug("Panel " + (visible ? "shown" : "hidden"));
   }
 
   private computeDesiredPosition(): vec3 {

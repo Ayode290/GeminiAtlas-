@@ -3852,9 +3852,14 @@
     unselectedIconAlpha: true
     labelForwardOffset: true
     labelSize: true
-    enableTracking: true
     distanceFromCamera: true
     followSpeed: true
+    palmFacingMaxAngleDeg: true
+    palmShowHoldFrames: true
+    palmHideHoldFrames: true
+    palmFollowSpeed: true
+    palmRotateSpeed: true
+    palmFaceCamera: true
     enableLogging: true
     enableLoggingLifecycle: true
   ScriptTypesDefault:
@@ -3890,13 +3895,22 @@
       labelOffset: -2.300000
       labelForwardOffset: 0.200000
       labelSize: !<float> 28.000000
-      enableTracking: true
+      enableTracking: false
       distanceFromCamera: !<float> 60.000000
       heightOffset: 12.500000
       followSpeed: !<float> 6.000000
       rotateSpeed: !<float> 4.000000
       positionDeadzone: !<float> 1.000000
       rotationDeadzoneDeg: !<float> 8.000000
+      attachToRightPalm: true
+      palmOffset: !<Vec3> {x: 0.000000, y: 10.000000, z: 0.000000}
+      palmFacingMaxAngleDeg: !<float> 55.000000
+      requireFlatPalm: true
+      palmShowHoldFrames: !<float> 3.000000
+      palmHideHoldFrames: !<float> 8.000000
+      palmFollowSpeed: !<float> 14.000000
+      palmRotateSpeed: !<float> 14.000000
+      palmFaceCamera: true
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -4139,7 +4153,7 @@
       scannerPrefab: !<reference.ObjectPrefab> c475918d-699f-44b3-bb86-b68c3360300d
       demoMode: true
       demoCaptions: !<string[]>
-        - "Every banana you've ever eaten is a clone of the same banana - the Cavendish, with zero genetic variation. Its sweeter predecessor, the Gros Michel, was cloned the same way until a fungus wiped out the entire global crop in the 1950s. The Cavendish is now losing to the same disease. #History #GrosMichel #Monoculture"
+        - "Every banana you've ever eaten is a clone of the same banana - the Cavendish, with zero genetic variation. Its sweeter predecessor, the Gros Michel, was cloned the same way until a fungus wiped out the entire global crop in the 1950s. The Cavendish is now losing to the same disease. #Botany #GrosMichel #Monoculture"
         - "Bananas are radioactive enough from the potassium inside them that scientists coined a real unit — the 'banana equivalent dose' — to talk about radiation. An astronaut on the ISS absorbs thousands of bananas' worth a day.  #Space #Radiation #ISS "
         - "The most expensive Banana - In 2019 an artist duct-taped a banana to a gallery wall, called it 'Comedian,' and sold it for $120,000 — a later edition went for $6.2 million in 2024. #ArtHistory #Cattelan #ConceptualArt"
         - "Pigeons can be trained to tell a Monet from a Picasso — and they sort paintings they've never seen before, so they're reading style, not memorizing pictures. The 1995 study won an Ig Nobel Prize. #ArtHistory #Pigeons #Monet #Picasso"
@@ -4148,7 +4162,7 @@
         - 'Start your next reply with something like "Did you know Bananas are radioactive?"'
         - 'Start your next reply with something like "The most expensive banana was 6.2 million dolalrs"'
         - 'Start you next reply with something like "Pigeons are art connoisseurs too!"'
-      demoLoadingSeconds: 0.300000
+      demoLoadingSeconds: 0.750000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -4208,6 +4222,10 @@
       interestStore: !<MappingBased.AssignableType_1> 2c3773fe-2157-4aaf-97b1-027135a3edef
       topics: !<string[]>
         []
+      preselectedTopics: !<string[]>
+        - Botany
+        - Space
+        - Art History
       ovalAspect: 1.600000
       horizontalGap: 1.500000
       verticalGap: !<float> 1.000000

@@ -53,6 +53,10 @@ export class TopicSelectionPanel extends BaseScriptComponent {
   topics: string[] = []
 
   @input
+  @hint("Topics toggled on at launch. Matching is case/space-insensitive against the shown topics.")
+  preselectedTopics: string[] = []
+
+  @input
   @hint("Width/height ratio of the oval cluster. >1 is wider than tall. Drives how many rows are used.")
   ovalAspect: number = 1.6
 
@@ -132,11 +136,29 @@ export class TopicSelectionPanel extends BaseScriptComponent {
 
     const topics = this.resolveTopics()
     this.buildButtons(frame, buttonRoot, topics)
+    this.applyPreselection()
 
     frame.showVisual()
     this.positionPanel(frame)
     this.built = true
     this.logger.info("Topic panel built with " + topics.length + " topics.")
+  }
+
+  /**
+   * Toggles on any configured `preselectedTopics` once the buttons exist. Matching
+   * is case/space-insensitive so editor entries line up with the button labels.
+   */
+  private applyPreselection() {
+    const requested = (this.preselectedTopics ?? []).filter(
+      (t) => typeof t === "string" && t.trim().length > 0
+    )
+    if (requested.length === 0) return
+    const { matched } = this.setTopicSelection(requested, true)
+    if (this.enableLogging) {
+      this.logger.debug(
+        "Pre-selected topics: " + (matched.length > 0 ? matched.join(", ") : "(none matched)")
+      )
+    }
   }
 
   /**

@@ -26,6 +26,7 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    attachToRightPalm: false
     cameraObj: false
     distanceFromCamera: false
     enableLogging: false
@@ -40,7 +41,15 @@
     labelForwardOffset: false
     labelOffset: false
     labelSize: false
+    palmFaceCamera: false
+    palmFacingMaxAngleDeg: false
+    palmFollowSpeed: false
+    palmHideHoldFrames: false
+    palmOffset: false
+    palmRotateSpeed: false
+    palmShowHoldFrames: false
     positionDeadzone: false
+    requireFlatPalm: false
     rotateSpeed: false
     rotationDeadzoneDeg: false
     scene1Button: false
@@ -98,6 +107,15 @@
       rotateSpeed: !<float> 6.000000
       positionDeadzone: !<float> 5.000000
       rotationDeadzoneDeg: 0.500000
+      attachToRightPalm: false
+      palmOffset: !<Vec3> {x: 0.000000, y: 8.000000, z: 0.000000}
+      palmFacingMaxAngleDeg: !<float> 55.000000
+      requireFlatPalm: false
+      palmShowHoldFrames: !<float> 3.000000
+      palmHideHoldFrames: !<float> 8.000000
+      palmFollowSpeed: !<float> 14.000000
+      palmRotateSpeed: !<float> 14.000000
+      palmFaceCamera: true
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -146,6 +164,17 @@
     - '// @input float rotateSpeed = 6 {"hint":"Rotation follow speed for the billboard (slerp factor = rotateSpeed * dt)."}'
     - '// @input float positionDeadzone = 5 {"hint":"Dead zone radius in cm: the panel only chases the camera once the target drifts beyond this, killing micro-jitter."}'
     - '// @input float rotationDeadzoneDeg = 0.5 {"hint":"Rotation dead zone in degrees: the panel only re-aims once the target rotation drifts beyond this, so a still/slightly-moving head costs no rotation work. Set 0 to always re-aim."}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Right-Palm Attach Mode</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">When ON, the panel ignores camera tracking and instead rides above the right wrist, appearing only while the right palm faces you (the classic raise-your-palm hand-menu gesture). The script keeps running while hidden so the active scene and pose detection are unaffected. In the editor (no hand tracking) it falls back to camera billboard so you can still see it.</span>"}'
+    - '// @input bool attachToRightPalm {"hint":"Attach the panel to the right palm (turn your palm toward you to reveal it) instead of billboarding in front of the camera."}'
+    - "// @input vec3 palmOffset = {0,8,0} {\"hint\":\"Offset (cm) from the right wrist, in the wrist's local space, where the panel sits. Positive Y lifts it above the open palm.\"}"
+    - '// @input float palmFacingMaxAngleDeg = 55 {"hint":"Palm-facing tolerance in degrees: the panel shows while the palm faces you within this angle. Larger = easier to trigger."}'
+    - '// @input bool requireFlatPalm {"hint":"Also require the palm to be open/flat (not a fist) before showing."}'
+    - '// @input float palmShowHoldFrames = 3 {"hint":"Consecutive palm-facing frames required before the panel appears (debounce against flicker)."}'
+    - "// @input float palmHideHoldFrames = 8 {\"hint\":\"Consecutive non-facing frames required before the panel hides (kept higher than show so brief wobbles don't blink it).\"}"
+    - '// @input float palmFollowSpeed = 14 {"hint":"Position follow speed while palm-attached (lerp factor = speed * dt). Higher = snappier to the hand."}'
+    - '// @input float palmRotateSpeed = 14 {"hint":"Rotation follow speed while palm-attached (slerp factor = speed * dt)."}'
+    - '// @input bool palmFaceCamera = true {"hint":"Billboard the palm panel toward the camera (readable text). Turn off to align it to the wrist orientation instead."}'
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - '// @input bool enableLogging {"hint":"Enable general logging"}'
