@@ -136,6 +136,16 @@ export class CardVoiceAgent extends BaseScriptComponent {
   // The card currently being discussed, so spoken corrections/additions can edit
   // its caption in place. Set by engageCard; null when no card is engaged.
   private activeCard: CardEditTarget | null = null;
+  // Optional opener-prompt override for the active card (used by demo mode to
+  // steer what the agent says). When set it replaces the default opener;
+  // {caption} and {interests} placeholders are substituted. null -> default.
+  private activePrompt: string | null = null;
+  // Whether THIS live session has already opened at least one card. The session
+  // is long-lived, so its context window still holds the previous card's
+  // conversation; the second card onward must be told to drop that prior topic
+  // (otherwise the agent answers, then drifts back to the old card). Reset to
+  // false on every new connection (a fresh session has no history to leave).
+  private engagedAnyCardThisSession = false;
 
   onAwake(): void {
     this.logger = new Logger("CardVoiceAgent", this.enableLogging, true);
@@ -186,6 +196,9 @@ export class CardVoiceAgent extends BaseScriptComponent {
   /** Connect a conversational Gemini Live session (audio out + mic in). */
   private connect(): void {
     this.connecting = true;
+    // A brand-new session starts with an empty context window, so the first card
+    // it opens needs no "forget the previous card" framing.
+    this.engagedAnyCardThisSession = false;
     this.liveSession = Gemini.liveConnect();
 
     this.liveSession.onOpen.add(() => {
@@ -327,11 +340,14 @@ export class CardVoiceAgent extends BaseScriptComponent {
    * speaks an extra fact and then takes spoken follow-ups. The mic starts on the
    * first engage and stays on for the rest of the session.
    */
-  engageCard(captionText: string, target?: CardEditTarget): void {
+  engageCard(captionText: string, target?: CardEditTarget, promptOverride?: string): void {
     if (!captionText || captionText.trim().length === 0) return;
     // Remember which card to edit if the conversation calls for a correction or
     // addition. Updated on every engage so it always points at the discussed card.
     this.activeCard = target ?? null;
+    // Optional per-card opener override (demo mode). Blank -> use the default.
+    this.activePrompt =
+      promptOverride && promptOverride.trim().length > 0 ? promptOverride : null;
     // Single-session rule: take the live slot from the query agent if it holds it
     // (bidirectional handoff — when the user later looks back at the cosmos the
     // query agent re-arms itself). Opening a competing session without suspending
@@ -487,6 +503,47 @@ export class CardVoiceAgent extends BaseScriptComponent {
     this.applyEdit("append_caption", { addition });
   }
 
+  /**
+   * Builds the opener prompt the agent acts on when a card is engaged. Normally
+   * a "share one extra fact" instruction grounded in the caption + the user's
+   * interests; when an override was supplied (demo mode), that text is used
+   * instead with {caption} and {interests} placeholders substituted.
+   */
+  private buildOpenerPrompt(captionText: string, isTopicSwitch: boolean): string {
+    const store = (global as any).cropInterestStore;
+    const interests: string[] =
+      store && typeof store.getInterests === "function" ? store.getInterests() : [];
+    const interestLine =
+      interests.length > 0 ? interests.join(", ") : "surprising, little-known facts";
+
+    // When moving to a different card mid-session, force a hard context switch:
+    // the model still has the previous card in its context window and will
+    // otherwise answer, then drift back to it ("anyway, back to..."). This
+    // applies to BOTH the default and injected-override openers.
+    const switchPreamble = isTopicSwitch
+      ? "The user has just turned to a COMPLETELY DIFFERENT, brand-new card. The previous card and " +
+        "everything you were discussing about it is over. Do NOT mention it, return to it, or say " +
+        "things like \"anyway, back to\" — your entire focus is now ONLY this new card.\n\n"
+      : "";
+
+    if (this.activePrompt) {
+      const injected = this.activePrompt
+        .split("{caption}").join(captionText)
+        .split("{interests}").join(interestLine);
+      return switchPreamble + injected;
+    }
+
+    return (
+      switchPreamble +
+      "The user just selected a trivia card. The card shows:\n\n" +
+      captionText +
+      "\n\nTheir interests: " +
+      interestLine +
+      ". Share ONE extra surprising, specific detail related to this card in one or two warm " +
+      "sentences (do NOT repeat the caption), then invite them to ask anything about it."
+    );
+  }
+
   private sendCardContext(captionText: string): void {
     // Open the listening window the first time a card is engaged.
     if (!this.listening) {
@@ -502,19 +559,11 @@ export class CardVoiceAgent extends BaseScriptComponent {
       this.logger.info("Microphone listening started");
     }
 
-    const store = (global as any).cropInterestStore;
-    const interests: string[] =
-      store && typeof store.getInterests === "function" ? store.getInterests() : [];
-    const interestLine =
-      interests.length > 0 ? interests.join(", ") : "surprising, little-known facts";
-
-    const prompt =
-      "The user just selected a trivia card. The card shows:\n\n" +
-      captionText +
-      "\n\nTheir interests: " +
-      interestLine +
-      ". Share ONE extra surprising, specific detail related to this card in one or two warm " +
-      "sentences (do NOT repeat the caption), then invite them to ask anything about it.";
+    // The first card of a session gets a clean opener; every later card must be
+    // told to abandon the prior card (see engagedAnyCardThisSession).
+    const isTopicSwitch = this.engagedAnyCardThisSession;
+    this.engagedAnyCardThisSession = true;
+    const prompt = this.buildOpenerPrompt(captionText, isTopicSwitch);
 
     this.logger.info("Engaging card: " + captionText);
     const turn: GeminiTypes.Live.ClientContent = {

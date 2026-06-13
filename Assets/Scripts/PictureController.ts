@@ -4,6 +4,7 @@
  */
 import { Logger } from "Utilities.lspkg/Scripts/Utils/Logger";
 import {SIK} from "SpectaclesInteractionKit.lspkg/SIK"
+import {PictureBehavior} from "./PictureBehavior"
 
 @component
 export class PictureController extends BaseScriptComponent {
@@ -14,6 +15,24 @@ export class PictureController extends BaseScriptComponent {
   @input
   @hint("Prefab instantiated when both hands pinch close together")
   scannerPrefab: ObjectPrefab
+
+  @ui.separator
+  @ui.label('<span style="color: #60A5FA;">Demo Mode (no AI)</span>')
+  @input
+  @hint("Demo-only: skip the ChatGPT vision call. Capture + display work exactly the same, but each crop loads the next pre-written caption below instead of analyzing the image. The backdrop color, action buttons, storage, and voice agent all behave identically.")
+  demoMode: boolean = false
+
+  @input
+  @hint("Pre-written captions, one per capture IN ORDER (crop 0 -> entry 0, crop 1 -> entry 1, ...). END EACH with a hashtag line, e.g. '#Space #Saturn #Astronomy'. The FIRST hashtag must match a preset topic (Art History, Chemistry, Biology, Botany, Physics, Space, Music, History, Food, Design, Trains, Aviation, XR) so the backdrop picks the right color. Once the list runs out, further crops reuse the last entry.")
+  demoCaptions: string[]
+
+  @input
+  @hint("OPTIONAL parallel list of voice-agent opener prompts (same index as the caption above). Controls what the AI says when it comes over to comment on that card. Use {caption} and {interests} as placeholders. Leave an entry blank to use the default opener.")
+  demoAgentPrompts: string[]
+
+  @input
+  @hint("Demo-only: seconds to show the loading indicator before the caption appears, mimicking the AI 'thinking' delay.")
+  demoLoadingSeconds: number = 1.2
 
   @ui.separator
   @ui.label('<span style="color: #60A5FA;">Logging</span>')
@@ -34,6 +53,11 @@ export class PictureController extends BaseScriptComponent {
 
   private leftDown = false
   private rightDown = false
+
+  // Demo mode: which pre-written caption the NEXT real capture consumes. Advanced
+  // only when a scanner actually pulls its content (so a too-small crop that
+  // destroys itself never skips an entry), and clamped so it reuses the last one.
+  private demoIndex = 0
 
   onAwake() {
     this.logger = new Logger("PictureController", this.enableLogging || this.enableLoggingLifecycle, true);
@@ -98,5 +122,47 @@ export class PictureController extends BaseScriptComponent {
       }
     }
     const scanner = this.scannerPrefab.instantiate(this.getSceneObject())
+    if (this.demoMode) {
+      this.configureDemoScanner(scanner)
+    }
+  }
+
+  /**
+   * Wires a freshly instantiated scanner into demo mode: instead of calling
+   * ChatGPT, its capture will pull the next pre-written caption (and optional
+   * agent opener prompt) from this controller. Done right after instantiate so
+   * the provider is set before any capture completes (the editor preview path in
+   * PictureBehavior fires on a short delay; device captures wait for pinch-up).
+   */
+  private configureDemoScanner(scanner: SceneObject): void {
+    if (!this.demoCaptions || this.demoCaptions.length === 0) {
+      this.logger.warn("Demo mode is on but no demoCaptions are set; falling back to live AI.")
+      return
+    }
+    const pb = (scanner as any).getComponent(PictureBehavior.getTypeName()) as PictureBehavior
+    if (!pb || typeof pb.enableDemo !== "function") {
+      this.logger.warn("Scanner has no PictureBehavior; cannot enable demo mode, using live AI.")
+      return
+    }
+    pb.enableDemo(Math.max(0, this.demoLoadingSeconds), () => this.takeNextDemoContent())
+  }
+
+  /**
+   * Hands out the caption + opener prompt for the next real capture and advances
+   * the index (clamped to the last entry, which then repeats). Called by the
+   * scanner at the moment it commits to a capture, so indices stay in lockstep
+   * with cards that actually appear.
+   */
+  private takeNextDemoContent(): {caption: string; agentPrompt: string} {
+    const captions = this.demoCaptions ?? []
+    const i = Math.min(this.demoIndex, captions.length - 1)
+    const caption = captions[i] ?? ""
+    const prompts = this.demoAgentPrompts ?? []
+    const agentPrompt = i < prompts.length ? prompts[i] ?? "" : ""
+    if (this.demoIndex < captions.length) {
+      this.demoIndex++
+    }
+    this.logger.debug("Demo caption " + i + " of " + captions.length)
+    return {caption, agentPrompt}
   }
 }

@@ -26,6 +26,10 @@
   ExportUid: 00000000-0000-0000-0000-000000000000
   PackagePolicy: CanBeUnpacked
   ScriptInputsHidden:
+    demoAgentPrompts: false
+    demoCaptions: false
+    demoLoadingSeconds: false
+    demoMode: false
     enableLogging: false
     enableLoggingLifecycle: false
     scannerPrefab: false
@@ -39,6 +43,12 @@
     []
   DefaultScriptInputs:
     - scannerPrefab: !<reference.ObjectPrefab> 00000000-0000-0000-0000-000000000000
+      demoMode: false
+      demoCaptions: !<string[]>
+        []
+      demoAgentPrompts: !<string[]>
+        []
+      demoLoadingSeconds: 1.200000
       enableLogging: false
       enableLoggingLifecycle: false
   ScriptTypes:
@@ -49,6 +59,12 @@
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">References</span>"}'
     - '// @input Asset.ObjectPrefab scannerPrefab {"hint":"Prefab instantiated when both hands pinch close together"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Demo Mode (no AI)</span>"}'
+    - '// @input bool demoMode {"hint":"Demo-only: skip the ChatGPT vision call. Capture + display work exactly the same, but each crop loads the next pre-written caption below instead of analyzing the image. The backdrop color, action buttons, storage, and voice agent all behave identically."}'
+    - "// @input string[] demoCaptions {\"hint\":\"Pre-written captions, one per capture IN ORDER (crop 0 -> entry 0, crop 1 -> entry 1, ...). END EACH with a hashtag line, e.g. '#Space #Saturn #Astronomy'. The FIRST hashtag must match a preset topic (Art History, Chemistry, Biology, Botany, Physics, Space, Music, History, Food, Design, Trains, Aviation, XR) so the backdrop picks the right color. Once the list runs out, further crops reuse the last entry.\"}"
+    - '// @input string[] demoAgentPrompts {"hint":"OPTIONAL parallel list of voice-agent opener prompts (same index as the caption above). Controls what the AI says when it comes over to comment on that card. Use {caption} and {interests} as placeholders. Leave an entry blank to use the default opener."}'
+    - "// @input float demoLoadingSeconds = 1.2 {\"hint\":\"Demo-only: seconds to show the loading indicator before the caption appears, mimicking the AI 'thinking' delay.\"}"
     - '// @ui {"widget":"separator"}'
     - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
     - '// @input bool enableLogging {"hint":"Enable general logging"}'

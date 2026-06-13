@@ -105,6 +105,15 @@ export class PictureBehavior extends BaseScriptComponent {
   // button's toggle) mirror "the agent is highlighting this card" from any path.
   private engagedCallbacks: (() => void)[] = []
 
+  // Demo mode (wired by PictureController.enableDemo): when set, a capture loads
+  // pre-written text from this provider instead of sending the crop to ChatGPT.
+  // null -> normal live AI flow.
+  private demoProvider: (() => {caption: string; agentPrompt: string}) | null = null
+  private demoLoadingSeconds: number = 1.2
+  // The opener prompt handed to the voice agent for THIS card in demo mode (set
+  // when the demo caption is pulled). Empty -> the agent uses its default opener.
+  private demoAgentPrompt: string = ""
+
   onAwake() {
     this.logger = new Logger("PictureBehavior", this.enableLogging || this.enableLoggingLifecycle, true);
     if (this.enableLoggingLifecycle) this.logger.debug("LIFECYCLE: onAwake()");
@@ -130,13 +139,8 @@ export class PictureBehavior extends BaseScriptComponent {
       //wait for small delay and capture image
       const delayedEvent = this.createEvent("DelayedCallbackEvent")
       delayedEvent.bind(() => {
-        this.loadingObj.enabled = true
-        this.cropRegion.enabled = false
         this.captureRendMesh.mainPass.captureImage = ProceduralTextureProvider.createFromTexture(this.screenCropTexture)
-        this.chatGPT.makeImageRequest(this.captureRendMesh.mainPass.captureImage, (response) => {
-          this.loadingObj.enabled = false
-          this.loadCaption(response)
-        })
+        this.fetchCaption()
       })
       delayedEvent.reset(0.1)
     } else {
@@ -238,6 +242,17 @@ export class PictureBehavior extends BaseScriptComponent {
     this.engageAgent()
   }
 
+  /**
+   * Switches this card into demo mode (called by PictureController right after
+   * instantiate). The next capture skips ChatGPT and, after `loadingSeconds`,
+   * loads a pre-written caption pulled from `provider`. Everything downstream —
+   * backdrop color, action buttons, storage, voice agent — runs unchanged.
+   */
+  enableDemo(loadingSeconds: number, provider: () => {caption: string; agentPrompt: string}): void {
+    this.demoProvider = provider
+    this.demoLoadingSeconds = loadingSeconds
+  }
+
   /** Extracts every "#Tag" from text, returning the tags without the '#'. */
   private parseHashtags(text: string): string[] {
     const out: string[] = []
@@ -290,7 +305,9 @@ export class PictureBehavior extends BaseScriptComponent {
         getText: () => this.caption.getText(),
         setTextAnimated: (t: string) => this.caption.animateTextTo(t),
       }
-      agent.engageCard(this.captionText, target)
+      // In demo mode this card carries an optional opener-prompt override so we
+      // can steer what the agent says; live cards pass undefined (default opener).
+      agent.engageCard(this.captionText, target, this.demoAgentPrompt || undefined)
     } else {
       this.logger.warn("No cardVoiceAgent is registered (is the component enabled?).")
     }
@@ -384,14 +401,36 @@ export class PictureBehavior extends BaseScriptComponent {
         return
       }
       //remove update loop and process image
-      this.loadingObj.enabled = true
-      this.cropRegion.enabled = false
-
-      this.chatGPT.makeImageRequest(this.captureRendMesh.mainPass.captureImage, (response) => {
-        this.loadingObj.enabled = false
-        this.loadCaption(response)
-      })
+      this.fetchCaption()
     }
+  }
+
+  /**
+   * Resolves this card's caption and reveals it. Shows the loading indicator and
+   * hides the crop rectangle, then either (demo mode) loads pre-written text
+   * after a brief delay, or (live) sends the crop to ChatGPT. Both paths end by
+   * calling loadCaption(), so the rest of the card flow is identical.
+   */
+  private fetchCaption(): void {
+    this.loadingObj.enabled = true
+    this.cropRegion.enabled = false
+
+    if (this.demoProvider) {
+      const content = this.demoProvider()
+      this.demoAgentPrompt = content.agentPrompt ?? ""
+      const delayed = this.createEvent("DelayedCallbackEvent")
+      delayed.bind(() => {
+        this.loadingObj.enabled = false
+        this.loadCaption(content.caption)
+      })
+      delayed.reset(Math.max(0, this.demoLoadingSeconds))
+      return
+    }
+
+    this.chatGPT.makeImageRequest(this.captureRendMesh.mainPass.captureImage, (response) => {
+      this.loadingObj.enabled = false
+      this.loadCaption(response)
+    })
   }
 
   localTopLeft() {
