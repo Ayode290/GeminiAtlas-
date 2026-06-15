@@ -55,7 +55,6 @@
  *   - Both devices subscribe to onMessageReceived (was host-only before)
  *   - Host handles: GUEST_BUZZ, GUEST_RESUME
  *   - Guest handles: HOST_ROAST
- *   - onRoastReceived callback wired in onSessionReady so roastText renders on screen
  */
 
 import { SessionController }  from 'SpectaclesSyncKit.lspkg/Core/SessionController'
@@ -66,6 +65,13 @@ import { StoragePropertySet } from 'SpectaclesSyncKit.lspkg/Core/StorageProperty
 // (and any other UIKit button). Typing the inputs as BaseButton lets the manager
 // accept any button variant — they all expose onTriggerUp + getSceneObject().
 import { BaseButton }          from 'SpectaclesUIKit.lspkg/Scripts/Components/Button/BaseButton'
+// Sassy host types only (pure, Gemini-free module — safe to import here). The
+// BattleHostVoice component itself is reached via an `any` accessor (like the
+// roast fetcher) so this manager never pulls in the Gemini/live-session deps.
+import { BattleEvent, GameSnapshot } from './Scripts/Battle/BattleHostLines'
+// Premade-card questions are baked ahead of time (the deck cards never change),
+// so the only runtime LLM calls are for user-specific CAPTURED cards.
+import { PREMADE_QUESTIONS } from './Scripts/Battle/PremadeQuestions'
 
 interface ISnapCloudRequirements {
   isConfigured(): boolean
@@ -82,11 +88,20 @@ interface TriviaRecord {
   option4: string
   optionCount: number
   answer: number
+  // Short host lines carried inline in the synced JSON so both devices have them:
+  // `roast` is spoken on a wrong answer, `praise` on a correct one. Absent on
+  // emergency Supabase rows (the curated host bank covers those).
+  roast?: string
+  praise?: string
 }
 
 const MSG_GUEST_BUZZ   = 'GUEST_BUZZ'    // guest → host: "GUEST_BUZZ:timestamp:optionIndex"
-const MSG_HOST_ROAST   = 'HOST_ROAST'    // host → guest: "HOST_ROAST:questionId:roast1|roast2"
+const MSG_HOST_ROAST   = 'HOST_ROAST'    // host → guest: "HOST_ROAST:questionId:inline" (show synced inline roast)
 const MSG_GUEST_READY  = 'GUEST_READY'   // guest → host: guest tapped the Ready button
+// Guest → host: ships one of the guest's card-generated questions during the
+// pre-game window. "QADD:<questionJson>" per question, then "QDONE" when finished.
+const MSG_Q_ADD        = 'QADD'
+const MSG_Q_DONE       = 'QDONE'
 
 // Game lifecycle phases (synced via gamePhaseProp)
 const PHASE_LOBBY     = 'LOBBY'      // waiting for both players to ready up
@@ -174,14 +189,20 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
 
   @input public enableDebugLogs: boolean = true
 
-  // ── Roast integration ─────────────────────────────────────────────────────
-  @input('Component.ScriptComponent')
-  @hint("EdgeFunctionRoastById script component")
-  public roastFetcherComponent: ScriptComponent
-
+  // ── Roast display ─────────────────────────────────────────────────────────
   @input
   @hint("Text component to display the roast message on screen")
   public roastText: Text | null = null
+
+  // ── Sassy host voice (optional) ───────────────────────────────────────────
+  @input('Component.ScriptComponent')
+  @hint("BattleHostVoice script component — speaks the trivia-host reactions. Optional; the game runs fine without it.")
+  public battleHostComponent: ScriptComponent
+
+  // ── Card-driven question generator ────────────────────────────────────────
+  @input('Component.ScriptComponent')
+  @hint("BattleQuestionGenerator script component — turns each player's cards into fun trivia. If unassigned, falls back to the Supabase question fetch.")
+  public questionGeneratorComponent: ScriptComponent
 
   // ── SyncEntity ────────────────────────────────────────────────────────────
   private gameSyncEntity: SyncEntity | null = null
@@ -243,10 +264,52 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
   private isHost: boolean              = false
   private localPlayerId: string        = ''
 
-  // ── Roast fetcher accessor ────────────────────────────────────────────────
-  private get roastFetcher(): any {
-    return this.roastFetcherComponent as any
+  // ── Sassy host accessor (any — avoids importing the Gemini-backed component) ─
+  private get battleHost(): any {
+    return this.battleHostComponent as any
   }
+
+  // ── Question generator accessor (any — keeps the OpenAI import out of here) ──
+  private get questionGenerator(): any {
+    return this.questionGeneratorComponent as any
+  }
+
+  // ── Card-driven question queue (host-assembled, served one per round) ───────
+  // Order: recently-captured cards from BOTH players (round-robin interleave)
+  // first, then premade-card questions. Built once during the pre-game window.
+  private questionQueue: TriviaRecord[] = []
+  private queueIndex: number            = 0
+  private premadeStartIndex: number     = -1  // where premade questions begin in the queue
+  private hostCaptured: TriviaRecord[]  = []  // this host's captured-card questions
+  private guestCaptured: TriviaRecord[] = []  // guest's captured-card questions (via QADD)
+  private premadeQuestions: TriviaRecord[] = []
+  private hostCapturedReady: boolean    = false
+  private guestDone: boolean            = false
+  private premadeReady: boolean         = false
+  private queueAssembled: boolean       = false
+  private generationStarted: boolean    = false
+  private awaitingQueue: boolean        = false  // a round is waiting for the queue
+  private nextSyntheticId: number       = 100000 // AI ids never collide with Supabase ids
+  private currentRoast: string          = ''      // inline wrong-answer line for the live question
+  private currentPraise: string         = ''      // inline correct-answer line for the live question
+
+  // How many premade-card questions to pre-generate (enough to finish a match).
+  private readonly PREMADE_BATCH_COUNT  = 12
+  // How long the host waits for slow/silent generation before assembling anyway.
+  private readonly QUEUE_ASSEMBLE_DEADLINE_SEC = 8
+
+  // ── Sassy host local state (per-device, local player's perspective) ─────────
+  private matchStarted: boolean       = false  // beginMatch() fired once
+  private gameOverAnnounced: boolean  = false  // WIN/LOSS spoken once
+  private localStreak: number         = 0      // consecutive correct answers
+  private lastLeadSign: number        = 0      // -1 behind / 0 even / +1 ahead
+  private announcedBlowout: boolean   = false  // blowout called for this streak
+  private questionLoadedAt: number    = 0      // getTime() when the question showed
+  private localAnswerMs: number       = -1     // ms from show → local buzz (-1 none)
+  private localRoastSpokenThisRound: boolean = false // local player already heard its roast
+
+  private readonly FAST_ANSWER_MS       = 2500 // under this = "fast correct"
+  private readonly BLOWOUT_GAP          = 20   // score gap that counts as a blowout
 
   // ───────────────────────────────────────────────────────────────────────────
   // Lifecycle
@@ -309,18 +372,6 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
       // writes synced props, the host's writes always propagate with no conflict.
       false, 'Session', gameNetworkId
     )
-
-    // ── Wire roast callback — fires when HTTP response arrives ────────────────
-    // Both devices need this so roastText renders when the fetcher gets a response
-    if (this.roastFetcherComponent && this.roastText) {
-      this.roastFetcher.onRoastReceived = (text: string) => {
-        this.log(`Roast received: ${text}`)
-        if (this.roastText) {
-          this.roastText.text = text
-          this.roastText.enabled = true
-        }
-      }
-    }
 
     this.setupScoreboardCrossTalk()
 
@@ -453,29 +504,60 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
         }
         return
       }
-    }
 
-    // ── Guest handles roast instruction from host ───────────────────────────
-    if (!this.isHost) {
-      if (message.startsWith(MSG_HOST_ROAST + ':')) {
-        // Format: "HOST_ROAST:questionId:roast1" or "HOST_ROAST:questionId:roast2"
-        const parts = message.split(':')
-        if (parts.length >= 3) {
-          const questionId = parseInt(parts[1])
-          const roastField = parts[2] as 'roast1' | 'roast2'
-          this.log(`Guest fetching ${roastField} for question id:${questionId}`)
-          if (this.roastFetcherComponent) {
-            this.roastFetcher.callFunctionWithId(questionId)
-            if (roastField === 'roast1') {
-              this.roastFetcher.fetchRoast1()
-            } else {
-              this.roastFetcher.fetchRoast2()
-            }
-          }
-        }
+      if (message.startsWith(MSG_Q_ADD + ':')) {
+        // Payload is JSON (contains ':'), so slice past the prefix — don't split.
+        const json = message.substring(MSG_Q_ADD.length + 1)
+        this.acceptGuestQuestion(json)
+        return
+      }
+
+      if (message === MSG_Q_DONE) {
+        this.guestDone = true
+        this.log(`Guest finished sending ${this.guestCaptured.length} question(s)`)
+        this.tryAssembleQueue()
         return
       }
     }
+
+    // ── Guest shows its own already-synced inline roast on the host's cue ─────
+    if (!this.isHost) {
+      if (message.startsWith(MSG_HOST_ROAST + ':')) {
+        // Format: "HOST_ROAST:questionId:inline" — the roast is already in the
+        // synced question JSON, so the guest just renders its local copy.
+        this.log('Guest showing inline roast')
+        this.applyRoast(this.currentRoast)
+        return
+      }
+    }
+  }
+
+  // Host-only: stores a card-generated question shipped by the guest. If the
+  // queue was already assembled (deadline fired before the guest finished),
+  // splice it in just before the premade section — unless premade questions have
+  // already started being served, in which case append it to the end.
+  private acceptGuestQuestion(json: string) {
+    let rec: TriviaRecord
+    try {
+      rec = this.toRecord(JSON.parse(json))
+    } catch (e) {
+      this.log(`Bad guest question payload: ${e}`)
+      return
+    }
+
+    if (!this.queueAssembled) {
+      this.guestCaptured.push(rec)
+      return
+    }
+
+    rec.id = this.nextSyntheticId++
+    if (this.premadeStartIndex >= 0 && this.queueIndex <= this.premadeStartIndex) {
+      this.questionQueue.splice(this.premadeStartIndex, 0, rec)
+      this.premadeStartIndex += 1
+    } else {
+      this.questionQueue.push(rec)
+    }
+    this.log('Spliced late guest question into queue')
   }
 
   private guestSendMessage(message: string) {
@@ -550,6 +632,9 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
       this.setReadyButtonVisible(false)
       if (this.readyStatusText) this.readyStatusText.enabled = false
       this.setGameElementsVisible(false)
+      // Both devices begin generating questions from their own cards now, so the
+      // queue is ready by the time the first round needs it.
+      this.beginQuestionGeneration()
 
     } else if (phase === PHASE_ACTIVE) {
       this.setReadyButtonVisible(false)
@@ -587,6 +672,29 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
     this.setStatusText(this.localReadyDone
       ? 'Ready! Waiting for opponent…'
       : 'Tap Ready to start')
+
+    // Fresh lobby (both devices reach here) → reset the host's per-match memory.
+    this.resetBattleHostLocalState()
+    this.resetQuestionQueueState()
+  }
+
+  // Clears the card-question queue so a rematch regenerates from scratch. Runs on
+  // both devices whenever a fresh lobby is shown.
+  private resetQuestionQueueState() {
+    this.questionQueue = []
+    this.queueIndex = 0
+    this.premadeStartIndex = -1
+    this.hostCaptured = []
+    this.guestCaptured = []
+    this.premadeQuestions = []
+    this.hostCapturedReady = false
+    this.guestDone = false
+    this.premadeReady = false
+    this.queueAssembled = false
+    this.generationStarted = false
+    this.awaitingQueue = false
+    this.currentRoast = ''
+    this.currentPraise = ''
   }
 
   private updateReadyStatusText() {
@@ -665,7 +773,169 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
     this.roundResultProp.setPendingValue('')
     this.currentActiveBuzzerProp.setPendingValue('NONE')
     this.roundStateProp.setPendingValue('PLAYING')
-    this.fetchAndSync()
+    this.serveNextQuestion()
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Card-driven question queue
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // Kicks off question prep. Runs on BOTH devices (from the COUNTDOWN phase).
+  // CAPTURED-card questions are generated at runtime from this device's own cards
+  // (the guest ships its results to the host); the host fills the premade pool
+  // from the BAKED question set (no LLM call). Idempotent — fires once per match.
+  private beginQuestionGeneration() {
+    if (this.generationStarted) return
+    this.generationStarted = true
+
+    // Captured-card questions need the generator (their cards are user-specific).
+    if (this.questionGeneratorComponent) {
+      const captured = this.gatherCapturedCards()
+      this.log(`Generating from ${captured.length} captured card(s) (isHost:${this.isHost})`)
+      this.questionGenerator.generate(captured, (records: any[]) => {
+        const recs = (records ?? []).map((r) => this.toRecord(r))
+        if (this.isHost) {
+          this.hostCaptured = recs
+          this.hostCapturedReady = true
+          this.tryAssembleQueue()
+        } else {
+          // Ship each question to the host, then signal completion.
+          for (const r of recs) this.guestSendMessage(`${MSG_Q_ADD}:${JSON.stringify(r)}`)
+          this.guestSendMessage(MSG_Q_DONE)
+        }
+      })
+    } else {
+      // No generator → no captured questions; the baked premade set carries the
+      // match. Still signal completion so the host can assemble immediately.
+      this.hostCaptured = []
+      this.hostCapturedReady = true
+      if (!this.isHost) this.guestSendMessage(MSG_Q_DONE)
+    }
+
+    if (this.isHost) {
+      // Premade-card questions are baked ahead of time — instant, no API call.
+      // Shuffle so each match draws a different premade slate.
+      this.premadeQuestions = this.shuffleCards(PREMADE_QUESTIONS)
+        .slice(0, this.PREMADE_BATCH_COUNT)
+        .map((q) => this.toRecord(q))
+      this.premadeReady = true
+
+      // Don't let slow captured-card generation or a silent guest stall the
+      // start — assemble with whatever has arrived once the deadline passes.
+      const deadline = this.createEvent('DelayedCallbackEvent') as DelayedCallbackEvent
+      deadline.bind(() => { if (!this.queueAssembled) this.tryAssembleQueue(true) })
+      deadline.reset(this.QUEUE_ASSEMBLE_DEADLINE_SEC)
+
+      this.tryAssembleQueue()
+    }
+  }
+
+  // Host-only: builds the ordered queue once the pieces are ready (or forced).
+  // Captured questions from both players come first (round-robin interleave so
+  // each player's recent captures alternate), then the premade-card questions.
+  private tryAssembleQueue(force: boolean = false) {
+    if (!this.isHost || this.queueAssembled) return
+    const ready = this.hostCapturedReady && this.guestDone && this.premadeReady
+    if (!ready && !force) return
+
+    const captured = this.interleave(this.hostCaptured, this.guestCaptured)
+    this.questionQueue = captured.concat(this.premadeQuestions)
+    for (const r of this.questionQueue) r.id = this.nextSyntheticId++
+    this.premadeStartIndex = captured.length
+    this.queueAssembled = true
+    this.log(`Queue assembled — ${captured.length} captured + ${this.premadeQuestions.length} premade (forced:${force})`)
+
+    // A round may already be waiting on the queue (countdown finished first).
+    if (this.awaitingQueue) {
+      this.awaitingQueue = false
+      this.serveNextQuestion()
+    }
+  }
+
+  // Host-only: publishes the next queued question (the synced render path is
+  // unchanged). Waits if the queue isn't assembled yet; tops up from the baked
+  // premade pool if it runs dry mid-match so a round never stalls.
+  private serveNextQuestion() {
+    if (!this.isHost) return
+
+    // Queue not built yet (countdown beat generation) — serve as soon as ready.
+    if (!this.queueAssembled) {
+      this.awaitingQueue = true
+      this.setStatusText('Loading questions…')
+      return
+    }
+
+    // Queue ran dry in a long match — refill from the baked premade pool.
+    if (this.queueIndex >= this.questionQueue.length) {
+      this.topUpPremade()
+      if (this.queueIndex >= this.questionQueue.length) {
+        // Baked pool somehow empty — emergency Supabase question.
+        this.log('Queue exhausted — falling back to Supabase')
+        this.fetchAndSync()
+        return
+      }
+    }
+
+    const record = this.questionQueue[this.queueIndex]
+    this.queueIndex += 1
+    this.jsonQuestionProp.setPendingValue(JSON.stringify(record))
+  }
+
+  // Host-only: appends a fresh shuffled slate of baked premade questions when the
+  // queue runs dry in a long match (synchronous — no LLM call).
+  private topUpPremade() {
+    const more = this.shuffleCards(PREMADE_QUESTIONS).slice(0, this.PREMADE_BATCH_COUNT)
+    for (const q of more) {
+      const rec = this.toRecord(q)
+      rec.id = this.nextSyntheticId++
+      this.questionQueue.push(rec)
+    }
+  }
+
+  // Cards captured THIS session, from the session-scoped store. Mapped to the
+  // generator's minimal CardSeed shape. Returns [] when no store/captures exist.
+  private gatherCapturedCards(): any[] {
+    const store = (global as any).cropCardStore
+    if (!store || typeof store.getCards !== 'function') return []
+    return (store.getCards() as any[])
+      .filter((c) => c.premade === false)
+      .map((c) => ({ text: c.text, topics: c.topics ?? [], location: c.location ?? '' }))
+  }
+
+  // Maps a generated question object to a TriviaRecord (id assigned at assembly).
+  private toRecord(r: any): TriviaRecord {
+    return {
+      id: 0,
+      question: String(r?.question ?? ''),
+      option1: String(r?.option1 ?? ''),
+      option2: String(r?.option2 ?? ''),
+      option3: String(r?.option3 ?? ''),
+      option4: String(r?.option4 ?? ''),
+      optionCount: Number(r?.optionCount ?? 4),
+      answer: Number(r?.answer ?? 1),
+      roast: typeof r?.roast === 'string' ? r.roast : '',
+      praise: typeof r?.praise === 'string' ? r.praise : '',
+    }
+  }
+
+  // Round-robin merge so both players' recent captures alternate (fairness).
+  private interleave(a: TriviaRecord[], b: TriviaRecord[]): TriviaRecord[] {
+    const out: TriviaRecord[] = []
+    const max = Math.max(a.length, b.length)
+    for (let i = 0; i < max; i++) {
+      if (i < a.length) out.push(a[i])
+      if (i < b.length) out.push(b[i])
+    }
+    return out
+  }
+
+  private shuffleCards<T>(input: T[]): T[] {
+    const copy = input.slice()
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      const tmp = copy[i]; copy[i] = copy[j]; copy[j] = tmp
+    }
+    return copy
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -699,11 +969,12 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
     const guestChoice = parseInt(parts[2] ?? '-1')
     const myChoice = this.isHost ? hostChoice : guestChoice
 
+    const iWon = (type === 'WIN_HOST' && this.isHost) || (type === 'WIN_GUEST' && !this.isHost)
+
     let phrase: string
     if (type === 'BOTH_WRONG') {
       phrase = SAY_BOTH_WRONG
     } else {
-      const iWon = (type === 'WIN_HOST' && this.isHost) || (type === 'WIN_GUEST' && !this.isHost)
       phrase = iWon ? SAY_WIN_ROUND : (myChoice > 0 ? SAY_ROBBED : SAY_TOO_SLOW)
     }
 
@@ -714,6 +985,7 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
       this.showGameOver()
     } else {
       this.setResponse(phrase)
+      this.narrateRoundResult(iWon, myChoice)
     }
   }
 
@@ -816,7 +1088,7 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
 
       if (activeBuzzer === 'NONE') {
         // First wrong answer — open steal window and trigger roast for wrong player
-        this.triggerRoastForWrongAnswer(player, 'roast1')
+        this.triggerRoastForWrongAnswer(player)
 
         this.hostBuzzedTimeProp.setPendingValue('')
         this.guestBuzzedTimeProp.setPendingValue('')
@@ -827,7 +1099,7 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
 
       } else {
         // Steal attempt also failed — both wrong, conclude the question.
-        this.triggerRoastForWrongAnswer(player, 'roast2')
+        this.triggerRoastForWrongAnswer(player)
         this.publishRoundResult('BOTH_WRONG')
         this.roundStateProp.setPendingValue('REVEAL_INCORRECT')
       }
@@ -846,32 +1118,32 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
   // Roast integration
   // ───────────────────────────────────────────────────────────────────────────
 
-  private triggerRoastForWrongAnswer(
-    wrongPlayer: 'HOST' | 'GUEST',
-    roastField: 'roast1' | 'roast2'
-  ) {
-    if (!this.roastFetcherComponent) {
-      this.log('roastFetcher not assigned — skipping roast')
-      return
-    }
-
+  // Every battle question carries its roast inline (synced in the question JSON),
+  // so the wrong player's own device just renders its copy — no network lookup.
+  // A question with no roast simply falls through to the host's curated wrong line.
+  private triggerRoastForWrongAnswer(wrongPlayer: 'HOST' | 'GUEST') {
+    if (!this.currentRoast) return
     if (wrongPlayer === 'HOST') {
-      // Host fetches and shows its own roast directly
-      this.log(`Host fetching ${roastField} for question id:${this.currentQuestionId}`)
-      this.roastFetcher.callFunctionWithId(this.currentQuestionId)
-      if (roastField === 'roast1') {
-        this.roastFetcher.fetchRoast1()
-      } else {
-        this.roastFetcher.fetchRoast2()
-      }
-
-    } else if (wrongPlayer === 'GUEST') {
-      // Host sends a message telling the guest to fetch its own roast
-      // The guest handles this in onMessageReceived and fetches locally
-      const msg = `${MSG_HOST_ROAST}:${this.currentQuestionId}:${roastField}`
-      this.log(`Sending roast instruction to guest: ${msg}`)
+      this.applyRoast(this.currentRoast)
+    } else {
+      // Cue the guest to render its own already-synced inline roast.
+      const msg = `${MSG_HOST_ROAST}:${this.currentQuestionId}:inline`
+      this.log(`Sending inline-roast cue to guest: ${msg}`)
       this.hostSendMessage(msg)
     }
+  }
+
+  // Render the roast on screen and speak it via the host, cancelling the curated
+  // wrong-answer fallback (the question-specific roast takes over that moment).
+  private applyRoast(text: string) {
+    if (!text) return
+    this.log(`Roast: ${text}`)
+    if (this.roastText) {
+      this.roastText.text = text
+      this.roastText.enabled = true
+    }
+    this.localRoastSpokenThisRound = true
+    this.battleHost?.speakRoast(text)
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -962,6 +1234,14 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
     this.localHasAnsweredPhase = true
     this.setStatusText('Locked in…')
 
+    // Cut THIS device's question read the instant the local player buzzes (the
+    // other device keeps reading until the round actually concludes). The outcome
+    // line — roast at buzz-eval, or praise/general at conclusion — plays after.
+    this.battleHost?.stopQuestionRead()
+
+    // How fast the local player buzzed (for the host's "fast correct" reaction).
+    this.localAnswerMs = Math.max(0, (getTime() - this.questionLoadedAt) * 1000)
+
     // Server time so the host can rank host vs guest buzzes on one shared clock.
     const ts = this.serverNow()
     if (this.isHost) {
@@ -1020,18 +1300,44 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
 
       this.currentQuestionId = Number(record.id ?? 0)
       this.correctAnswer = Number(record.answer ?? 0)
+      // Every battle question carries its host lines inline in the synced JSON:
+      // roast (wrong answer) and praise (correct answer).
+      this.currentRoast = typeof record.roast === 'string' ? record.roast : ''
+      this.currentPraise = typeof record.praise === 'string' ? record.praise : ''
+
       if (this.questionText) this.questionText.text = String(record.question ?? '')
       this.setOptionText(0, String(record.option1 ?? ''))
       this.setOptionText(1, String(record.option2 ?? ''))
       this.setOptionText(2, String(record.option3 ?? ''))
       this.setOptionText(3, String(record.option4 ?? ''))
       this.localHasAnsweredPhase = false
+      this.localRoastSpokenThisRound = false  // fresh question → no roast spoken yet
       this.hideAnswerFeedback()
+
+      // Host timing: remember when this question appeared so we can tell a fast
+      // buzz from a slow one, and clear last round's answer time.
+      this.questionLoadedAt = getTime()
+      this.localAnswerMs = -1
 
       // Reveal the board (hidden during lobby/countdown) and clear last round.
       this.setGameElementsVisible(true)
       this.hideAnswerMarkers()
       this.setResponse(this.questionStartResponse())
+
+      // ── Sassy host: connect on the first question, and tease a matchpoint ────
+      if (!this.matchStarted) {
+        this.matchStarted = true
+        this.battleHost?.beginMatch()
+      }
+      if (this.battleHost && this.isLocalMatchpoint()) {
+        this.battleHost.onBattleEvent('PRE_MATCHPOINT' as BattleEvent, this.battleSnapshot())
+      }
+
+      // Read the question aloud (just the question — never the options). On a
+      // matchpoint round the taunt above was sent first, so this non-interrupting
+      // read queues right after it. Cut instantly at a local buzz (checkUserAnswer)
+      // or overridden by the outcome line at conclusion.
+      this.battleHost?.speakQuestion(String(record.question ?? ''))
 
       // Clear roast from previous round
       if (this.roastText) {
@@ -1084,6 +1390,120 @@ export class MultiplayerTriviaManager extends BaseScriptComponent {
     const iWon = (winner === 'HOST' && this.isHost) || (winner === 'GUEST' && !this.isHost)
     this.setResponse(iWon ? SAY_GAME_WIN : SAY_GAME_LOSE)
     this.setStatusText('Game over')
+
+    // Sassy host: announce the result once, then free the live session after the
+    // line has had time to play (closing immediately would cut it off).
+    if (this.battleHost && !this.gameOverAnnounced) {
+      this.gameOverAnnounced = true
+      this.battleHost.onBattleEvent((iWon ? 'WIN' : 'LOSS') as BattleEvent, this.battleSnapshot())
+      const ev = this.createEvent('DelayedCallbackEvent') as DelayedCallbackEvent
+      ev.bind(() => this.battleHost?.endMatch())
+      ev.reset(8)
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Sassy host narration (per-device, local player's perspective)
+  // ───────────────────────────────────────────────────────────────────────────
+
+  // One spoken line per round conclusion, and the question's OWN line always wins:
+  //   win  → this question's praise (real-time for captured cards, baked for
+  //          premade), falling back to the curated CORRECT bank only if absent;
+  //   loss → this question's roast, falling back to the curated WRONG/TOO_SLOW
+  //          bank only if it's missing/slow.
+  private narrateRoundResult(iWon: boolean, myChoice: number) {
+    if (!this.battleHost) return
+
+    if (iWon) this.localStreak += 1
+    else      this.localStreak = 0
+
+    // detectLeadEvent() is called every round for its side effects (it maintains
+    // lastLeadSign / announcedBlowout); its event is only SPOKEN as a fallback when
+    // the question carries no applicable specific line — the card praise/roast wins.
+    const leadEvent = this.detectLeadEvent()
+    const snap = this.battleSnapshot()
+
+    if (iWon) {
+      // PRIMARY: the question's own praise line. Only if it carries none (e.g. a
+      // Supabase row) do we fall to a momentum swing, then the curated CORRECT bank.
+      if (this.currentPraise) {
+        this.battleHost.speakPraise(this.currentPraise)
+      } else if (leadEvent) {
+        this.battleHost.onBattleEvent(leadEvent, snap)
+      } else {
+        const fast = this.localAnswerMs >= 0 && this.localAnswerMs < this.FAST_ANSWER_MS
+        this.battleHost.onBattleEvent(fast ? 'FAST_CORRECT' : 'CORRECT', snap)
+      }
+    } else {
+      // The wrong buzzer already heard this question's roast at buzz time — never
+      // speak a second loss line for them (fixes the duplicate + the override).
+      if (this.localRoastSpokenThisRound) return
+      // This local player didn't buzz wrong (robbed / too slow), so no roast played:
+      // one loss line — a momentum swing if there is one, else the generic bank.
+      if (leadEvent) {
+        this.battleHost.onBattleEvent(leadEvent, snap)
+      } else {
+        this.battleHost.onBattleEvent(myChoice > 0 ? 'WRONG' : 'TOO_SLOW', snap)
+      }
+    }
+  }
+
+  // Detects a lead flip / blowout from the (synced) scores. Returns the event to
+  // call once on transition, or null. Updates the tracked lead state either way.
+  private detectLeadEvent(): BattleEvent | null {
+    const hs = this.hostScoreProp.currentOrPendingValue ?? 0
+    const gs = this.guestScoreProp.currentOrPendingValue ?? 0
+    const my  = this.isHost ? hs : gs
+    const opp = this.isHost ? gs : hs
+    const sign = my > opp ? 1 : (my < opp ? -1 : 0)
+    const gap = Math.abs(my - opp)
+
+    let ev: BattleEvent | null = null
+    if (gap >= this.BLOWOUT_GAP) {
+      if (!this.announcedBlowout && sign !== 0) {
+        ev = sign > 0 ? 'BLOWOUT_WINNING' : 'BLOWOUT_LOSING'
+        this.announcedBlowout = true
+      }
+    } else {
+      this.announcedBlowout = false
+      if (sign !== 0 && sign !== this.lastLeadSign) {
+        ev = sign > 0 ? 'TAKE_LEAD' : 'FALL_BEHIND'
+      }
+    }
+    this.lastLeadSign = sign
+    return ev
+  }
+
+  private battleSnapshot(): GameSnapshot {
+    const hs = this.hostScoreProp.currentOrPendingValue ?? 0
+    const gs = this.guestScoreProp.currentOrPendingValue ?? 0
+    return {
+      myScore:  this.isHost ? hs : gs,
+      oppScore: this.isHost ? gs : hs,
+      winScore: this.winScore,
+      streak:   this.localStreak,
+      answerMs: this.localAnswerMs,
+    }
+  }
+
+  // True when either player can win on the next correct answer (a tense moment).
+  private isLocalMatchpoint(): boolean {
+    const hs = this.hostScoreProp.currentOrPendingValue ?? 0
+    const gs = this.guestScoreProp.currentOrPendingValue ?? 0
+    const my  = this.isHost ? hs : gs
+    const opp = this.isHost ? gs : hs
+    return (my + this.REWARD_POINTS >= this.winScore) ||
+           (opp + this.REWARD_POINTS >= this.winScore)
+  }
+
+  private resetBattleHostLocalState() {
+    this.matchStarted = false
+    this.gameOverAnnounced = false
+    this.localStreak = 0
+    this.lastLeadSign = 0
+    this.announcedBlowout = false
+    this.localAnswerMs = -1
+    this.localRoastSpokenThisRound = false
   }
 
   // ── Board visibility ───────────────────────────────────────────────────────

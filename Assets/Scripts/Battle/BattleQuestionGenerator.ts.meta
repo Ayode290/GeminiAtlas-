@@ -1,0 +1,50 @@
+- !<AssetImportMetadata/27ec2e77-a32a-4d72-8435-555173e3aab2>
+  ImportedAssetIds:
+    TypeScriptAsset: !<reference> f3c7ca9a-d1fd-4155-a173-72ad769148c7
+  ImporterName: TypeScriptAssetImporter
+  PrimaryAsset: !<reference> f3c7ca9a-d1fd-4155-a173-72ad769148c7
+  PackageType: NotAPackage
+  LegacyPackagePolicy: ~
+  ExtraData:
+    {}
+  AssetDataMap:
+    TypeScriptAsset: !<own> 2440b8ba-842a-4790-ab86-1f4b42d6b61f
+  DependentFiles:
+    []
+  ImporterSettings: !<AssetImporterSettings>
+    {}
+  CompressionSettings: !<own> 00000000-0000-0000-0000-000000000000
+- !<TypeScriptAssetData/2440b8ba-842a-4790-ab86-1f4b42d6b61f>
+  SvgIcon: ""
+  SetupScript:
+    code: ""
+  Description: ""
+  VersionMajor: 0
+  VersionMinor: 0
+  VersionPatch: 0
+  ComponentUid: 93e60e08-12d6-4951-89d7-f256b058aa60
+  ExportUid: 00000000-0000-0000-0000-000000000000
+  PackagePolicy: CanBeUnpacked
+  ScriptInputsHidden:
+    enableLogging: false
+    enableLoggingLifecycle: false
+  ScriptTypesHidden:
+    {}
+  ReadMe: !<reference> 00000000-0000-0000-0000-000000000000
+  DeclarationFile: !<reference> 00000000-0000-0000-0000-000000000000
+  Tags:
+    []
+  Attachments:
+    []
+  DefaultScriptInputs:
+    - enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    -
+      {}
+  InputLines:
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">BattleQuestionGenerator – cards → fun trivia via OpenAI</span><br/><span style=\"color: #94A3B8; font-size: 11px;\">Returns a JSON array of multiple-choice questions (with inline roasts) tied to each card. Needs the OpenAI RSG token configured (as for ChatGPT).</span>"}'
+    - '// @ui {"widget":"separator"}'
+    - '// @ui {"widget":"label", "label":"<span style=\"color: #60A5FA;\">Logging</span>"}'
+    - '// @input bool enableLogging {"hint":"Enable general logging"}'
+    - '// @input bool enableLoggingLifecycle {"hint":"Enable lifecycle logging (onAwake, onStart, onUpdate, onDestroy)"}'

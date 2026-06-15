@@ -29,6 +29,7 @@
     answerMarkerOffset: false
     answerMarkerStackSpacing: false
     answerMarkerTextSize: false
+    battleHostComponent: false
     correctText: false
     countdownText: false
     debugText: false
@@ -44,11 +45,11 @@
     optionButton3: false
     optionButton4: false
     optionButtonChildTextName: false
+    questionGeneratorComponent: false
     questionText: false
     readyButton: false
     readyStatusText: false
     responseText: false
-    roastFetcherComponent: false
     roastText: false
     snapCloudRequirements: false
     statusText: false
@@ -91,8 +92,9 @@
       nextRoundDelaySeconds: !<float> 5.000000
       winScore: !<float> 30.000000
       enableDebugLogs: true
-      roastFetcherComponent: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
       roastText: !<reference.Text> 00000000-0000-0000-0000-000000000000
+      battleHostComponent: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
+      questionGeneratorComponent: !<reference.ScriptComponent> 00000000-0000-0000-0000-000000000000
   ScriptTypes:
     -
       {}
@@ -124,5 +126,6 @@
     - // @input float nextRoundDelaySeconds = 5
     - '// @input float winScore = 30 {"hint":"Score needed to win the game"}'
     - // @input bool enableDebugLogs = true
-    - '// @input Component.ScriptComponent roastFetcherComponent {"hint":"EdgeFunctionRoastById script component"}'
     - '// @input Component.Text roastText {"hint":"Text component to display the roast message on screen"}'
+    - '// @input Component.ScriptComponent battleHostComponent {"hint":"BattleHostVoice script component — speaks the trivia-host reactions. Optional; the game runs fine without it."}'
+    - "// @input Component.ScriptComponent questionGeneratorComponent {\"hint\":\"BattleQuestionGenerator script component — turns each player's cards into fun trivia. If unassigned, falls back to the Supabase question fetch.\"}"

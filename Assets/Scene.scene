@@ -3085,6 +3085,24 @@
     CapitalizationOverride: None
   DepthTest: false
   TwoSided: false
+- !<ScriptComponent/4a6c4ae2-578d-4889-a840-71a384a34996>
+  PrefabRemaps:
+    []
+  Name: BattleQuestionGenerator
+  Enabled: true
+  ScriptAsset: !<reference> f3c7ca9a-d1fd-4155-a173-72ad769148c7
+  ScriptInputsDefault:
+    enableLogging: true
+    enableLoggingLifecycle: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      enableLogging: false
+      enableLoggingLifecycle: false
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/4a9b0152-cf65-483d-aa2d-ee36dc58317a>
   PrefabRemaps:
     []
@@ -3472,6 +3490,29 @@
     []
   Components:
     - !<own> 3b22a243-698a-47af-849a-be243a8f890d
+- !<ScriptComponent/53961e7f-ae40-4b31-83ae-25388a80cb1d>
+  PrefabRemaps:
+    []
+  Name: BattleHostVoice
+  Enabled: true
+  ScriptAsset: !<reference> 611bf803-8556-405b-ad9d-445044c94e3e
+  ScriptInputsDefault:
+    persona: true
+    model: true
+    enableLogging: true
+  ScriptTypesDefault:
+    {}
+  ScriptInputs:
+    "":
+      websocketRequirementsObj: !<reference.SceneObject> 0fc53fdb-e0c9-4876-9997-27447c597c4f
+      dynamicAudioOutput: !<MappingBased.AssignableType> 56d4b1d9-f137-4f41-8c54-c2efaf037961
+      voice: Leda
+      persona: "You are a sassy, quick-witted trivia game-show host, in the spirit of Tom Gleeson or Anne Robinson: confident, fast, lightly roasting the player's play but never cruel. You will be given a single short line to say. Read it OUT LOUD exactly as written -- the same words, in the same order -- adding only your sassy, confident vocal delivery and timing. Do NOT add, remove, rephrase, translate, or explain anything. No stage directions, no quotation marks, no preamble. Just perform the line."
+      model: gemini-live-2.5-flash
+      enableLogging: true
+  ScriptTypes:
+    "":
+      {}
 - !<SceneObject/540eaa32-a6e8-4954-b54b-38aed9f354bf>
   PrefabRemaps:
     []
@@ -3909,7 +3950,7 @@
       scene3Label: Battle
       scene3Objects: !<reference.SceneObject[]>
         - !<reference> 54632fa9-d440-4f4f-b366-8861b86d5683
-      initialGroup: !<float> 2.000000
+      initialGroup: !<float> 3.000000
       iconMaterial: !<reference.Material> fb942e39-cb39-45c9-a514-72ed8ef7bc4c
       iconSize: 1.500000
       iconForwardOffset: 0.200000
@@ -6214,6 +6255,21 @@
     - !<own> 7e83b54b-f746-4415-991a-d3ed7c7bd09d
   Components:
     []
+- !<SceneObject/a4bc5804-6467-4adb-b7f2-2e8ed3b04986>
+  PrefabRemaps:
+    []
+  Name: BattleHostVoice
+  Enabled: true
+  Layers: 1
+  LocalTransform: !<TransformEntity>
+    Position: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Rotation: {x: 0.000000, y: 0.000000, z: 0.000000}
+    Scale: {x: 1.000000, y: 1.000000, z: 1.000000}
+    HasSegmentScaleCompensation: false
+  Children:
+    []
+  Components:
+    - !<own> 53961e7f-ae40-4b31-83ae-25388a80cb1d
 - !<SceneObject/a52b385a-0271-4d86-a736-2bafe9c65263>
   PrefabRemaps:
     []
@@ -7760,6 +7816,7 @@
     []
   Components:
     - !<own> e4f69a5b-150a-4899-95f5-58c106c15d86
+    - !<own> 4a6c4ae2-578d-4889-a840-71a384a34996
 - !<SceneObject/c713e130-36bf-4f6b-bb29-fc7a79d8bf33>
   PrefabRemaps:
     []
@@ -9240,6 +9297,7 @@
     - !<own> 20e7349d-8dd9-4741-b3f6-93b3ce13c8cd
     - !<own> b16b7dc3-834c-4c9e-b650-04767518f774
     - !<own> 30f72c7d-f45e-44fb-bf11-8ba512300bf9
+    - !<own> a4bc5804-6467-4adb-b7f2-2e8ed3b04986
   Components:
     []
 - !<SceneObject/e05c734e-e8cb-44ec-a60c-ec7b366eebdc>
@@ -9586,8 +9644,9 @@
       nextRoundDelaySeconds: !<float> 5.000000
       winScore: !<float> 30.000000
       enableDebugLogs: false
-      roastFetcherComponent: !<reference.ScriptComponent> fdce34fc-55e5-4367-b5a7-e37ffe929043
       roastText: !<reference.Text> 95b2d6d4-24d2-4f6f-a0f1-ccdb3ec5abd2
+      battleHostComponent: !<reference.ScriptComponent> 53961e7f-ae40-4b31-83ae-25388a80cb1d
+      questionGeneratorComponent: !<reference.ScriptComponent> 4a6c4ae2-578d-4889-a840-71a384a34996
   ScriptTypes:
     "":
       {}

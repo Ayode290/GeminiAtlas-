@@ -39,7 +39,38 @@ export class EdgeFunctionRoastById extends BaseScriptComponent {
     this.log(`Initialized — endpoint: ${this.snapCloudRequirements.getFunctionsApiUrl()}${this.functionName}`)
   }
 
-  private callEdgeFunctionByIdWithLabel(roastLabel: string, idValue: number) {
+  // Cache of fetched roast text, keyed `${id}:${label}`. Lets a wrong answer
+  // speak instantly from a prefetch instead of waiting on a network round-trip.
+  // (Supabase stays the source of truth, so roasts remain live-editable.)
+  private cache: { [key: string]: string } = {}
+
+  private cacheKey(idValue: number, roastLabel: string): string {
+    return `${idValue}:${roastLabel}`
+  }
+
+  /** Cached roast text for an id+label, or null if it hasn't been fetched yet. */
+  public getCachedRoast(idValue: number, roastLabel: string): string | null {
+    const v = this.cache[this.cacheKey(idValue, roastLabel)]
+    return typeof v === "string" && v.length > 0 ? v : null
+  }
+
+  /**
+   * Fetch BOTH roasts for a question ahead of time and cache them. Call this when
+   * the question LOADS (off the critical path) so the host can react with zero
+   * network latency the instant someone answers wrong.
+   */
+  public prefetchForId(idValue: number) {
+    this.requestRoast("roast1", idValue, null)
+    this.requestRoast("roast2", idValue, null)
+  }
+
+  // Performs the HTTP fetch for one label, caches the result, and — if `deliver`
+  // is provided — hands the text back. A null `deliver` is a silent prefetch.
+  private requestRoast(
+    roastLabel: string,
+    idValue: number,
+    deliver: ((text: string) => void) | null
+  ) {
     try {
       if (!this.snapCloudRequirements || !this.snapCloudRequirements.isConfigured()) {
         this.log("SnapCloudRequirements not configured")
@@ -89,9 +120,8 @@ export class EdgeFunctionRoastById extends BaseScriptComponent {
         const textValue = data?.[roastLabel]
         if (typeof textValue === "string" && textValue.length > 0) {
           this.log(`${roastLabel} → ${textValue}`)
-          if (this.onRoastReceived) {
-            this.onRoastReceived(textValue)
-          }
+          this.cache[this.cacheKey(idValue, roastLabel)] = textValue
+          if (deliver) deliver(textValue)
         } else {
           this.log(`${roastLabel} → field not found. Keys: ${Object.keys(data).join(", ")}`)
         }
@@ -101,12 +131,14 @@ export class EdgeFunctionRoastById extends BaseScriptComponent {
     }
   }
 
+  // Reactive fetches (used as a fallback if the prefetch hasn't landed). They
+  // cache too, and deliver via the onRoastReceived callback as before.
   public fetchRoast1() {
-    this.callEdgeFunctionByIdWithLabel("roast1", this.id)
+    this.requestRoast("roast1", this.id, (t) => { if (this.onRoastReceived) this.onRoastReceived(t) })
   }
 
   public fetchRoast2() {
-    this.callEdgeFunctionByIdWithLabel("roast2", this.id)
+    this.requestRoast("roast2", this.id, (t) => { if (this.onRoastReceived) this.onRoastReceived(t) })
   }
 
   public callFunctionWithId(idValue: number) {
