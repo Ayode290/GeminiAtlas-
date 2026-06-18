@@ -1,6 +1,6 @@
 # GeminiAtlas 
 
-**The world is your classroom.** CurioCity is a Snap **Spectacles** AR lens, built in **Lens Studio**, that turns everyday surroundings into a personal, social, AI‑powered learning experience. Pick what you're curious about, capture anything in front of you with a gesture, and an AI companion named **Momo** turns it into a trivia "card" tied to your interests. Discover what others have left in the world around you, revisit everything on an interactive globe and in flashcard decks, and challenge a friend to a sassy AI‑hosted trivia battle built from the cards you've collected.
+**The world is your classroom.** GeminiAtlas is a Snap **Spectacles** AR lens, built in **Lens Studio**, that turns everyday surroundings into a personal, social, AI‑powered learning experience. Pick what you're curious about, capture anything in front of you with a gesture, and an AI companion named **Momo** turns it into a trivia "card" tied to your interests. Discover what others have left in the world around you, revisit everything on an interactive globe and in flashcard decks, and challenge a friend to a sassy AI‑hosted trivia battle built from the cards you've collected.
 
 GeminiAtlas is the product of merging a world‑discovery + conversational‑voice lens with a card‑based multiplayer trivia game. It has been known during development as *TriviaWorld* / *TriviaGo*; **GeminiAtlas** is the current title.
 
