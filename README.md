@@ -2,7 +2,7 @@
 
 **The world is your classroom.** CurioCity is a Snap **Spectacles** AR lens, built in **Lens Studio**, that turns everyday surroundings into a personal, social, AI‑powered learning experience. Pick what you're curious about, capture anything in front of you with a gesture, and an AI companion named **Momo** turns it into a trivia "card" tied to your interests. Discover what others have left in the world around you, revisit everything on an interactive globe and in flashcard decks, and challenge a friend to a sassy AI‑hosted trivia battle built from the cards you've collected.
 
-GeminiAtlas is the product of merging a world‑discovery + conversational‑voice lens with a card‑based multiplayer trivia game. It has been known during development as *TriviaWorld* / *TriviaGo*; **CurioCity** is the current title.
+GeminiAtlas is the product of merging a world‑discovery + conversational‑voice lens with a card‑based multiplayer trivia game. It has been known during development as *TriviaWorld* / *TriviaGo*; **GeminiAtlas** is the current title.
 
 > **Model & data backends.** Model work runs through the **Remote Service Gateway (RSG)** — no Internet Access capability or on‑device API keys: Momo and the battle host speak on **Gemini Live**, and image understanding plus battle‑question generation use **OpenAI** (vision + gpt‑4o). Battle questions are **card‑driven** (captured cards via gpt‑4o, then baked premade questions), with **Snap Cloud / Supabase** as an emergency fallback question source. The two‑player session runs on **SpectaclesSyncKit**. See *Data sources* and *Battle mode*.
 
@@ -26,7 +26,7 @@ Two players go head‑to‑head in a trivia battle built from their **merged car
 
 ## System architecture
 
-CurioCity is many subsystems that mostly coordinate through a set of `global.*` singletons, so prefab‑instantiated objects can reach shared state without scene wiring.
+GeminiAtlas is many subsystems that mostly coordinate through a set of `global.*` singletons, so prefab‑instantiated objects can reach shared state without scene wiring.
 
 ### Global singletons
 
@@ -48,13 +48,13 @@ CurioCity is many subsystems that mostly coordinate through a set of `global.*` 
 | `global.globeController` | `GlobeController` | The globe/map state machine; driven by the query agent. |
 | `global.sceneSwitcher` | `SceneSwitcherPanel` | Radio‑style scene/group toggling. |
 
-### Voices & Momo's presence (Gemini Live via RSG)
+### Voices & Momo's presence (GeminiAtlas Live via RSG)
 
 All conversational agents connect to **Gemini Live through RSG**. Generated speech streams back as **24 kHz PCM** through a `DynamicAudioOutput` (each voice gets its own to avoid conflicts); mic input flows through one **shared** `MicrophoneAudioProvider`. Because the gateway keeps **only the newest live session alive**, the voices hand the single slot between each other rather than running at once.
 
 | Script | Role |
 |---|---|
-| `WelcomeVoice` | Momo's two‑way welcome host: generates a greeting, listens, and calls the topic tools to pick interests / start. Persona is pinned in code to keep it "Momo," never "Gemini." |
+| `WelcomeVoice` | Momo's two‑way welcome host: generates a greeting, listens, and calls the topic tools to pick interests / start. Persona is pinned in code to keep it "Momo," never "GeminiAtlas." |
 | `NudgeVoice` | Audio‑only narrator that lazily connects ~60 s in to remind you of the discovery gesture, then disconnects; suppressed once the world is discovered. |
 | `RecommendationVoiceAgent` | After Start, takes the slot from the host to present the three recommendation cards and select one by voice. |
 | `CardVoiceAgent` + `CardEditTools` | Conversational agent for the card you're looking at; `CardEditTools` holds the Gemini‑free tool declarations + exact text transforms for voice caption editing. |
