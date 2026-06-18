@@ -4,14 +4,14 @@
 **$0 USD**
 
 ## Project Status
-- **Project Creation Date**: May 4, 2026
+- **Project Creation Date**: April 15, 2026
 - **Current Stage**: MVP Prototype built for Snap Spectacles Hackathon
 - **Commercial Launch**: Not yet launched
 - **Paying Users**: 0
 - **Sales**: 0
 
 ## Revenue Explanation
-GeminiAtlas was created on 04/05/2026 for this hackathon. 
+GeminiAtlas was created on April 15, 2026 for this hackathon. 
 The project is currently a technical prototype only. 
 No product has been sold. No subscriptions are active. 
 No revenue has been generated as of the submission date.
@@ -24,4 +24,4 @@ Planned revenue streams after hackathon:
 
 ---
 Signed: GeminiAtlas Team  
-Date: May 4, 2026
+Date: June 18, 2026
