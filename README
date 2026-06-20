@@ -1,0 +1,59 @@
+# GeminiAtlas
+
+**GeminiAtlas** est un filtre AR pour Snap Spectacles qui transforme l'environnement réel en expérience d'apprentissage interactive. L'assistant vocal Momo utilise Qwen Cloud pour analyser les objets, générer des fiches pédagogiques Q/R et animer des jeux multijoueurs en temps réel.
+
+Conçu pour la Piste 5 : EdgeAgent du Hackathon Qwen 2026.
+
+## 1. Fonctionnalités Clés
+- **Capture & Apprentissage** : Momo identifie un objet via la caméra des Spectacles et génère une fiche Q/R instantanée.
+- **Globe Interactif** : Visualisation AR des concepts appris, synchronisée entre joueurs.
+- **Jeux de Cartes Multijoueur** : Mode combat à 2 joueurs via `SpectaclesSyncKit`.
+- **EdgeAgent** : Fonctionnement dégradé 100% local si le réseau est faible. Cache des 50 dernières sessions.
+
+## 2. Stack Technique
+- **Périphérie** : Lens Studio, Snap Spectacles Gen X, `SpectaclesSyncKit`
+- **Cloud/IA** : API Qwen Cloud `qwen3.7-plus` pour le raisonnement, `qwen-vl-plus` pour la vision
+- **Backend** : Snap Cloud / Supabase pour les questions de secours et la synchro multijoueur
+- **Langage** : TypeScript/Lua pour Lens Studio
+
+## 3. Installation
+1.  **Prérequis** : Lens Studio v5.0+, Snap Spectacles Gen X, Compte Qwen Cloud
+2.  **Cloner** : `git clone https://github.com/tonuser/GeminiAtlas`
+3.  **Ouvrir** : Lancer `GeminiAtlas.project` dans Lens Studio
+
+## 4. Configuration Qwen Cloud - OBLIGATOIRE
+Pour que GeminiAtlas fonctionne, il faut ta clé API Qwen Cloud.
+1.  Créer un fichier `.env` à la racine du projet Lens Studio
+2.  Ajouter : `QWEN_API_KEY=sk-ta-cle-ici`
+3.  Obtenir ta clé ici : `https://console.qwen.ai/api-keys`
+4.  Modèles utilisés : 
+    - `qwen3.7-plus` : Raisonnement, génération de texte, Q/R
+    - `qwen-vl-plus` : Analyse d'image depuis la caméra Spectacles
+
+Crédits Hackathon : Ce projet utilise les crédits Qwen Cloud Hackathon 2026.
+
+## 5. Utilisation
+1.  **Lancer** : Déployer le projet sur les Spectacles depuis Lens Studio
+2.  **Capturer** : Pointer un objet du quotidien. Momo l'identifie via `qwen-vl-plus`
+3.  **Apprendre** : Momo génère une fiche Q/R via `qwen3.7-plus`
+4.  **Jouer** : Lancer le mode combat. La session à 2 joueurs s'exécute sur `SpectaclesSyncKit`
+5.  **Mode Offline** : Couper le Wifi. Momo utilise le cache local pour répondre pendant 5 min sans cloud.
+
+## 6. Architecture EdgeAgent
+C'est ce que le jury Piste 5 évalue.
+- **Edge/Local** : Lens Studio sur Spectacles gère la capture caméra/micro, STT/TTS, et le cache local. Aucune clé API n'est stockée sur l'appareil.
+- **Cloud** : Les requêtes passent par une `passerelle de services distants RSG` vers Qwen Cloud API. Seul le texte/embedding est envoyé, pas la vidéo brute.
+- **Dégradation** : Si latence > 2s ou pas de réseau, bascule automatique sur le modèle local + cache des 50 dernières fiches. La session multijoueur continue.
+- **Vie Privée** : Les images sont analysées par `qwen-vl-plus` puis supprimées. Seules les métadonnées texte sont sauvegardées sur Supabase.
+
+## 7. Démo Vidéo
+Voir GeminiAtlas en action sur Snap Spectacles : 
+[Lien YouTube/Loom de ta démo ici]
+
+La vidéo montre : 1. Capture d'objet 2. Réponse Qwen Cloud 3. Mode multijoueur 4. Bascule mode offline
+
+## 8. Licence
+Ce projet est sous licence MIT. Voir le fichier `LICENSE`.
+
+## 9. Équipe
+Développé pour le Hackathon Qwen 2026 - Piste 5 EdgeAgent
