@@ -1,8 +1,7 @@
-## GeminiAtlas - What It Does
 
-GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
+##GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
 
-### 1. I Align the Sky with You: Lens Constellations 
+ 1. I Align the Sky with You: Lens Constellations 
 An AR Snap Lens that overlays constellations directly onto the stars you see. Built with Lens Studio using 3 main controls:
 
 - **Location**: Change country or city. The sky recalculates in real time. 
@@ -11,12 +10,12 @@ An AR Snap Lens that overlays constellations directly onto the stars you see. Bu
 
 **Result**: The sky is no longer abstract. It becomes an interactive astronomy textbook.
 
-### 2. I Read for You: The Bookworm Lens 
+ 2. I Read for You: The Bookworm Lens 
 Bookworm is a Snap Spectacles Lens. Frame any book with your hands. Using Lens Studio, GeminiAtlas analyzes the cover live. In 2 seconds it displays: author, summary, main themes, and similar books. The text pops out of the cover as a reading card you can check at a glance.
 
 **Result**: A library becomes a living database.
 
-### 3. The Globe - The Heart of GeminiAtlas 
+3. The Globe - The Heart of GeminiAtlas 
 Every card you capture with Constellations or Bookworm has a location, a topic, and a memory. I organize them spatially around you. Turn your head: Noguchi in Seattle. Another turn: innovation in Cotonou. Your long-term memory becomes a landscape. The more you capture, the more it becomes your best learning ally.
 
 **Capture & Remix**  
