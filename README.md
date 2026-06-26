@@ -1,5 +1,5 @@
 
-##GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
+### GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
 
  1. I Align the Sky with You: Lens Constellations 
 An AR Snap Lens that overlays constellations directly onto the stars you see. Built with Lens Studio using 3 main controls:
