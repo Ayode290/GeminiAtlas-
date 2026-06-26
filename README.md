@@ -1,7 +1,11 @@
+# GeminiAtlas for Education
 
-### GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
+**Built with Snap Spectacles + Lens Studio + Gemini AI**
 
- 1. I Align the Sky with You: Lens Constellations 
+GeminiAtlas is an Augmented Reality learning platform designed to unlock human potential at global scale. 
+By turning the real world into interactive lessons, it makes quality education personal, voice-first, and available to anyone, anywhere. 
+
+**For the world** : From a classroom in Africa, to a library in Europe, to self-learners in Asia and the Americas : Capture. Understand. Remember. Repeat.
 An AR Snap Lens that overlays constellations directly onto the stars you see. Built with Lens Studio using 3 main controls:
 
 - **Location**: Change country or city. The sky recalculates in real time. 
