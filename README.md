@@ -1,4 +1,35 @@
+## GeminiAtlas - What It Does
 
+GeminiAtlas is a Snap Spectacles Lens that turns your everyday environment into a personalized, social, AI-powered learning experience. It’s built on several pillars:
+
+### 1. I Align the Sky with You: Lens Constellations 
+An AR Snap Lens that overlays constellations directly onto the stars you see. Built with Lens Studio using 3 main controls:
+
+- **Location**: Change country or city. The sky recalculates in real time. 
+- **Compass**: The lens orients with you. Look north to see the Big Dipper. 
+- **Voice Command**: Say “Orion” or “Cassiopeia”. The lens displays and highlights the constellation. 
+
+**Result**: The sky is no longer abstract. It becomes an interactive astronomy textbook.
+
+### 2. I Read for You: The Bookworm Lens 
+Bookworm is a Snap Spectacles Lens. Frame any book with your hands. Using Lens Studio, GeminiAtlas analyzes the cover live. In 2 seconds it displays: author, summary, main themes, and similar books. The text pops out of the cover as a reading card you can check at a glance.
+
+**Result**: A library becomes a living database.
+
+### 3. The Globe - The Heart of GeminiAtlas 
+Every card you capture with Constellations or Bookworm has a location, a topic, and a memory. I organize them spatially around you. Turn your head: Noguchi in Seattle. Another turn: innovation in Cotonou. Your long-term memory becomes a landscape. The more you capture, the more it becomes your best learning ally.
+
+**Capture & Remix**  
+Pinch any element in your environment with two hands. GeminiAtlas turns it into a short, surprising Curiosity Card based on a random topic. Discuss each card with the AI assistant to learn more.
+
+**Explore & Share**  
+Cards are geolocated and made to be shared. Bring your hands together in front of your chest – a gesture that “unveils the world” – to reveal a universe of cards left by you and others.
+
+**Relive & Remember**  
+A living, evolving memory palace in the palm of your hand. The AI organizes all saved cards spatially, by topic, relevance, and by its memories of you. The more you capture, the better it understands how you learn.
+
+**Collect & Compete**  
+Challenge friends in a quiz. Questions are generated randomly from cards you and other players have captured. The player with the most cards and best knowledge wins. An AI host with offbeat humor reads each question out loud and reacts to your answers.
  
  **GeminiAtlas** is the current title.
 > **Model & data backends.** Model work runs through the **Remote Service Gateway (RSG)** — no Internet Access capability or on‑device API keys: Momo and the battle host speak on **Gemini Live**, and image understanding plus battle‑question generation use **OpenAI** (vision + gpt‑4o). Battle questions are **card‑driven** (captured cards via gpt‑4o, then baked premade questions), with **Snap Cloud / Supabase** as an emergency fallback question source. The two‑player session runs on **SpectaclesSyncKit**. See *Data sources* and *Battle mode*.
