@@ -1,39 +1,6 @@
-# GeminiAtlas Snap Spectacle Lens Studio by Bookwoom
 
-**For Gemini XPRIZE - Category: Education and Human Potential** 
-
-The world is your school. GeminiAtlas is a mobile web-app that explains any photo in simple English, as if talking to a 10-year-old child.
-
-### 1. Live Demo 
-Public Replit URL: [PASTE YOUR NEW TAB LINK HERE]
-
-### 2. The Problem 
-53% of children in Sub-Saharan Africa cannot understand science textbooks due to complex English vocabulary.
-
-### 3. Our AI-Native Solution 
-1.  User uploads a photo.
-2.  Gemini 1.5 Flash AI analyzes it. 
-3.  AI responds: "Hi, I am GeminiAtlas by Bookwoom. Here is what I see: ..."
-4. 100% of the teaching is done by AI. 0 human writing.
-
-### 4. How AI Runs the Business
-| Function | Agent | Human Oversight |
-| --- | --- | --- |
-| Teaching | Gemini API | 1h/week prompt check |
-| Sales | Paystack + AI | Set price 600 FCFA |
-| Support | AI Fallback Mode | None. AI handles errors |
-
-### 5. Tech Stack & Google Cloud 
-`Flask`, `google-generativeai`, `Replit`, `Paystack`. Uses Gemini 1.5 Flash API.
-
-### 6. Local Setup 
-```bash
-pip install -r requirements.txt
-# Add your GEMINI_API_KEY in main.py
-python main.py
  
  **GeminiAtlas** is the current title.
-
 > **Model & data backends.** Model work runs through the **Remote Service Gateway (RSG)** — no Internet Access capability or on‑device API keys: Momo and the battle host speak on **Gemini Live**, and image understanding plus battle‑question generation use **OpenAI** (vision + gpt‑4o). Battle questions are **card‑driven** (captured cards via gpt‑4o, then baked premade questions), with **Snap Cloud / Supabase** as an emergency fallback question source. The two‑player session runs on **SpectaclesSyncKit**. See *Data sources* and *Battle mode*.
 
 ---
@@ -354,8 +321,3 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 
 **UIKit buttons must be enabled at startup to wire their handlers.** Their tap handler binds in `OnStartEvent`, which never fires for an object disabled at launch — so disabling a button at startup permanently breaks it. The lobby swaps in a pre‑styled "Waiting" button (and hides it one frame later) instead of restyling or pre‑disabling the original.
 
----
-
-## Credits
-
-CurioCity (working titles *TriviaWorld* / *TriviaGo*) is a Spectacles + Spatial‑AI learning experience. Source headers are marked "Specs Inc. 2026."
