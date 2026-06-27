@@ -1,25 +1,3 @@
-A7:Description|B7:May|C7:June|D7:July|E7:August|F7:Full 90 Days
-A8:Independent Sales|B8:0|C8:75|D8:100|E8:125|F8:300
-A9:Related Party Revenue|B9:0|C9:0|D9:0|E9:0|F9:0
-A11:TOTAL REVENUE|B11:0|C11:75|D11:100|E11:125|F11:300
-A13:COGS|B13:0|C13:0|D13:0|E13:0|F13:0
-A14:Personnel|B14:0|C14:0|D14:0|E14:0|F14:0
-A15:Software Subscriptions|B15:20|C15:20|D15:20|E15:20|F15:80
-A16:Tokens|B16:0|C16:0|D16:0|E16:0|F16:0
-A17:SG&A|B17:0|C17:0|D17:0|E17:0|F17:0
-A18:Personnel|B18:0|C18:0|D18:0|E18:0|F18:0
-A19:Software Subscriptions|B19:0|C19:0|D19:0|E19:0|F19:0
-A20:Tokens|B20:0|C20:0|D20:0|E20:0|F20:0
-A21:Other Expenses|B21:0|C21:0|D21:0|E21:0|F21:0
-A22:Other expenses|B22:0|C22:0|D22:0|E22:0|F22:0
-A23:TOTAL EXPENSES|B23:20|C23:20|D23:20|E23:20|F23:80
-A25:PROFIT (LOSS)|B25:-20|C25:55|D25:80|E25:105|F25:220
-
-
-
-
-
-
 # GeminiAtlas for Education
 
 **Built with Snap Spectacles + Lens Studio + Gemini AI**
