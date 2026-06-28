@@ -22,3 +22,10 @@ tools/.tile_cache/
 # Claude Code local workspace (skills, settings, plans) — not project assets
 .claude/
 
+# Next.js build artifacts
+.next/
+out/
+node_modules/
+*.tsbuildinfo
+next-env.d.ts
+
