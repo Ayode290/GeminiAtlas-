@@ -11,7 +11,7 @@ All voice, pedagogy, and adaptive quiz logic run exclusively on Google Gemini Li
 OpenAI GPT-4o is used only as a vision backend through RSG for object identification from the camera feed. GPT-4o does not handle voice, quiz generation, or pedagogy.
 Battle questions are card-driven: cards are captured via GPT-4o vision, then all battle questions are generated and served by Gemini Live from premade, curriculum-aligned content. Snap Cloud / Supabase are used only as an emergency fallback data source. 
 Two-player sessions run on SpectaclesSyncKit. See Data Sources and Battle Mode for details
-### Proof 1: RSG Token Configuration
+  ### Proof 1: RSG Token Configuration
     **Caption:** `Lens Studio > Window > Remote Service Gateway Token. This proves Gemini Live is connected via Snap RSG.`
     ![RSG Token Setup](rsg-token-setup.png)
 
