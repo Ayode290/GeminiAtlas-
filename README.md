@@ -20,7 +20,7 @@ Two-player sessions run on SpectaclesSyncKit. See Data Sources and Battle Mode f
 
 ## The three pillars
 
-### I — Capture & learn
+### l ____ Capture & learn
 
 On launch, momo greets you by voice and helps you choose interests (or you tap them on a honeycomb panel). A **two‑hand pinch‑and‑pan** crops whatever's in front of you; an OpenAI vision model captions it into a short, surprising factoid framed through your chosen interests, ending in a topic hashtag. The card's border flows a rainbow while Momo is "thinking," then eases to the topic's color once the subject is known. You can then talk to Momo about any card to ask follow‑ups or edit its text by voice.
 
