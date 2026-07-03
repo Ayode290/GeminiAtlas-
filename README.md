@@ -7,8 +7,16 @@ By turning the real world into interactive lessons, it makes quality education p
 
 **For the world** : From a classroom in Africa, to a library in Europe, to self-learners in Asia and the Americas : Capture. Understand. Remember. Repeat.
 
- **GeminiAtlas** is the current title.
-> **Model & data backends.** Model work runs through the **Remote Service Gateway (RSG)** — : **Gemini Live**, and image understanding plus battle‑question generation use **OpenAI** (vision + gpt‑4o). Battle questions are **card‑driven** (captured cards via gpt‑4o, then baked premade questions), with **Snap Cloud / Supabase** as an emergency fallback question source. The two‑player session runs on **SpectaclesSyncKit**. See *Data sources* and *Battle mode*.
+ Model & Data Backends
+
+All voice, pedagogy, and adaptive quiz logic run exclusively on Google Gemini Live API via the Snap Remote Service Gateway (RSG). Spectacles streams 24kHz PCM audio to Gemini Live, which generates the AI Momo voice and all quiz content in real time with <500ms latency. 
+
+OpenAI GPT-4o is used only as a vision backend through RSG for object identification from the camera feed. GPT-4o does not handle voice, quiz generation, or pedagogy.
+
+Battle questions are card-driven: cards are captured via GPT-4o vision, then all battle questions are generated and served by Gemini Live from premade, curriculum-aligned content. Snap Cloud / Supabase are used only as an emergency fallback data source. 
+
+Two-player sessions run on SpectaclesSyncKit. See Data Sources and Battle Mode for details.
+
 
 ---
 
