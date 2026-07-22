@@ -338,10 +338,12 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 
 
 ## 🏆 Certificates
-
 **DSH Hacks V1 - June 15, 2026**  
 Project: `Devis Solaires AI Edu`  
 Certificate of Participation
-
 ![Certificat DSH Hacks](./DSH-Hacks-V1-Certificate.png)
 
+## 🏆 Certificats
+### 2. YouthCodeXAI Hackathon - 18 juillet 2026
+Attestation de completion  
+![Certificat YouthCodeXAI](./YouthCodeXAI-Certificate.png)
