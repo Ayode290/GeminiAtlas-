@@ -343,5 +343,5 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 Project: `Devis Solaires AI Edu`  
 Certificate of Participation
 
-![DSH Hacks Certificate](./cert-37vsFPJ951ohe618SyqucP.png)
+![Certificat DSH Hacks](./DSH-Hacks-V1-Certificate.png)
 
