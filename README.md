@@ -337,6 +337,22 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## 🏆 Certificates
 **DSH Hacks V1 - June 15, 2026**  
 Project: `Devis Solaires AI Edu`  
