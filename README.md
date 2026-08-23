@@ -336,15 +336,15 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 
 # GeminiAtlas 🌍
 
-Projet réalisé dans le cadre du **ML Empowerment Build Challenge 2.0**
+Project developed as part of the **ML Empowerment Build Challenge 2.0**
 
-## 🏆 Certificat de Participation
+## 🏆 Certificate of Participation
 
-Ce projet m'a valu un certificat de participation délivré par la **ML Empowerment Foundation**.
+This project earned me a Certificate of Participation awarded by the **ML Empowerment Foundation**.
 
-**Nom :** AYODELE BARTHELEMY TCHANGO  
-**Projet :** GeminiAtlas  
-**Date :** 20 Août 2026
+**Name:** AYODELE BARTHELEMY TCHANGO  
+**Project:** GeminiAtlas  
+**Date:** August 20, 2026
 
-![Certificat ML Empowerment](ML-Empowerment-Certificate.png)
+![ML Empowerment Certificate](ML-Empowerment-Certificate.png)
 
