@@ -1,4 +1,10 @@
-# GeminiAtlas for Education
+# GEMINIATLAS FOR EDUCATION 🌍✨
+
+<img src="https://img.shields.io/badge/Platform-AR%20Education-4285F4?style=flat"/>
+<img src="https://img.shields.io/badge/Tech-Snap%20%2B%20Gemini-EA4335?style=flat"/>
+<img src="https://img.shields.io/badge/License-MIT-FBBC05?style=flat"/>
+
+---
 
 **Built with Snap Spectacles + Lens Studio + Gemini AI**
 
