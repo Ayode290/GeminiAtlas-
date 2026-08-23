@@ -335,31 +335,3 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 **UIKit buttons must be enabled at startup to wire their handlers.** Their tap handler binds in `OnStartEvent`, which never fires for an object disabled at launch — so disabling a button at startup permanently breaks it. The lobby swaps in a pre‑styled "Waiting" button (and hides it one frame later) instead of restyling or pre‑disabling the original.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## 🏆 Certificates
-**DSH Hacks V1 - June 15, 2026**  
-Project: `Devis Solaires AI Edu`  
-Certificate of Participation
-![Certificat DSH Hacks](./DSH-Hacks-V1-Certificate.png)
-
-## 🏆 Certificats
-### 2. YouthCodeXAI Hackathon - 18 juillet 2026
-Attestation de completion  
-![Certificat YouthCodeXAI](./YouthCodeXAI-Certificate.png)
