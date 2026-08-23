@@ -1,7 +1,7 @@
 
 <div align="center">
 
-# GEMINIATLAS <span style="color:#4285F4">FOR</span> <span style="color:#EA4335">EDUCATION</span> 🌍✨
+# GEMINIATLAS <span style="color:#4285F4">FOR</span> <span style="color:#EA4335">EDUCATION</span> 🌍
 
 <img src="https://img.shields.io/badge/Platform-AR%20Education-4285F4?style=for-the-badge"/>
 <img src="https://img.shields.io/badge/Tech-Snap%20%2B%20Gemini-EA4335?style=for-the-badge"/>
