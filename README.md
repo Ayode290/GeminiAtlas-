@@ -1,4 +1,3 @@
-# GEMINIATLAS FOR EDUCATION 🌍✨
 
 <div align="center">
 
