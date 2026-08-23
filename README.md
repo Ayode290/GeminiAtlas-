@@ -334,4 +334,17 @@ tools/generate_map_textures.py         — Offline map-texture + cityBounds gene
 
 **UIKit buttons must be enabled at startup to wire their handlers.** Their tap handler binds in `OnStartEvent`, which never fires for an object disabled at launch — so disabling a button at startup permanently breaks it. The lobby swaps in a pre‑styled "Waiting" button (and hides it one frame later) instead of restyling or pre‑disabling the original.
 
+# GeminiAtlas 🌍
+
+Projet réalisé dans le cadre du **ML Empowerment Build Challenge 2.0**
+
+## 🏆 Certificat de Participation
+
+Ce projet m'a valu un certificat de participation délivré par la **ML Empowerment Foundation**.
+
+**Nom :** AYODELE BARTHELEMY TCHANGO  
+**Projet :** GeminiAtlas  
+**Date :** 20 Août 2026
+
+![Certificat ML Empowerment](ML-Empowerment-Certificate.png)
 
